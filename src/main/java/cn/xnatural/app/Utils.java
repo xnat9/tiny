@@ -8,27 +8,28 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-import static com.alibaba.fastjson.util.ThreadLocalCache.getBytes;
-
+/**
+ * 常用工具集
+ */
 public class Utils {
     protected static final Logger log = LoggerFactory.getLogger(Utils.class);
     /**
@@ -40,7 +41,7 @@ public class Utils {
 
     /**
      * 判断系统是否为 linux 系统
-     * 判断方法来源 {@link io.netty.channel.epoll.Native#loadNativeLibrary()}
+     * 判断方法来源 io.netty.channel.epoll.Native#loadNativeLibrary()
      * @return true: linux
      */
     public static boolean isLinux() {
@@ -54,7 +55,7 @@ public class Utils {
      * @return File
      */
     public static File baseDir(String child) {
-        File p = new File(System.getProperty("user.dir")).getParentFile();
+        File p = new File(System.getProperty("user.dir"));
         if (child != null) {return new File(p, child);}
         return p;
     }
@@ -95,6 +96,25 @@ public class Utils {
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
             digest.update(bs);
             return digest.digest();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
+     * md5 hex
+     * @param bs 被加密的byte[]
+     * @return md5加密后的字符串
+     */
+    public static String md5Hex(byte[] bs) {
+        try {
+            byte[] secretBytes = MessageDigest.getInstance("md5").digest(bs);
+            String md5code = new BigInteger(1, secretBytes).toString(16);
+            for (int i = 0; i < 32 - md5code.length(); i++) {
+                md5code = "0" + md5code;
+            }
+            return md5code;
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -178,7 +198,7 @@ public class Utils {
      * @param clz Class
      * @param fn 函数
      */
-    static void iterateField(final Class clz, Consumer<Field> fn) {
+    public static void iterateField(final Class clz, Consumer<Field> fn) {
         if (fn == null) return;
         Class c = clz;
         do {
@@ -193,6 +213,10 @@ public class Utils {
      * @return {@link Httper}
      */
     public static Httper http() { return new Httper(); }
+
+    /**
+     * http 请求
+     */
     public static class Httper {
         protected String                      urlStr;
         protected String                      contentType;
@@ -206,6 +230,7 @@ public class Utils {
         protected int                         respCode;
         protected Consumer<HttpURLConnection> preFn;
         protected boolean                     debug;
+        protected Charset charset = Charset.forName("utf-8");
 
         public Httper get(String url) { this.urlStr = url; this.method = "GET"; return this; }
         public Httper post(String url) { this.urlStr = url; this.method = "POST"; return this; }
@@ -221,6 +246,7 @@ public class Utils {
         public Httper connectTimeout(int timeout) { this.connectTimeout = timeout; return this; }
         public Httper preConnect(Consumer<HttpURLConnection> preConnect) { this.preFn = preConnect; return this; }
         public Httper debug() {this.debug = true; return this;}
+        public Httper charset(String charset) {this.charset = Charset.forName(charset); return this;}
         /**
          * 添加参数
          * @param name 参数名
@@ -250,8 +276,8 @@ public class Utils {
          * @return http请求结果
          */
         public String execute() {
-            String ret;
-            HttpURLConnection conn;
+            String ret = null;
+            HttpURLConnection conn = null;
             boolean isMulti = false; // 是否为 multipart/form-data 提交
             try {
                 URL url = null;
@@ -279,24 +305,27 @@ public class Utils {
 
                 // header 设置
                 conn.setRequestProperty("Accept", "*/*"); // 必加
-                conn.setRequestProperty("Charset", "UTF-8");
-                conn.setRequestProperty("Accept-Charset", "UTF-8");
-                if (contentType != null) conn.setRequestProperty("Content-Type", contentType + ";charset=UTF-8");
+                conn.setRequestProperty("Charset", charset.toString());
+                conn.setRequestProperty("Accept-Charset", charset.toString());
+                if (contentType != null) conn.setRequestProperty("Content-Type", contentType + ";charset=" + charset);
                 // conn.setRequestProperty("Connection", "close")
                 // conn.setRequestProperty("Connection", "keep-alive")
                 // conn.setRequestProperty("http_user_agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.26 Safari/537.36 Core/1.63.6726.400 QQBrowser/10.2.2265.400")
-                for (Map.Entry<String, String> entry : headers.entrySet()) {
-                    conn.setRequestProperty(entry.getKey(), entry.getValue());
+                if (headers != null) {
+                    for (Map.Entry<String, String> entry : headers.entrySet()) {
+                        conn.setRequestProperty(entry.getKey(), entry.getValue());
+                    }
                 }
 
                 String boundary = null;
                 if ("POST".equals(method)) {
                     conn.setUseCaches(false);
                     conn.setDoOutput(true);
-                    if ("multipart/form-data".equals(contentType) || params.entrySet().stream().anyMatch(entry -> entry.getValue() instanceof File)) {
+                    if ("multipart/form-data".equals(contentType) || (params != null && params.entrySet().stream().anyMatch(entry -> entry.getValue() instanceof File))) {
+                        isMulti = true;
                         boundary = "----CustomFormBoundary" + UUID.randomUUID().toString().replace("-", "");
                         contentType = "multipart/form-data;boundary=" + boundary;
-                        isMulti = true;
+                        conn.setRequestProperty("Content-Type", contentType + ";charset=" + charset);
                     }
                 }
 
@@ -318,7 +347,7 @@ public class Utils {
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
                     if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && ((params != null && !params.isEmpty()) || (bodyStr != null && !bodyStr.isEmpty()))) {
                         if (bodyStr == null) os.write(JSON.toJSONString(params).getBytes());
-                        else os.write(bodyStr.getBytes("utf-8"));
+                        else os.write(bodyStr.getBytes(charset));
                         os.flush(); os.close();
                     } else if (isMulti && (params != null && !params.isEmpty())) {
                         String end = "\r\n";
@@ -327,7 +356,7 @@ public class Utils {
                             os.writeBytes(twoHyphens + boundary + end);
                             if (entry.getValue() instanceof File) {
                                 String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +((File) entry.getValue()).getName()+ "\"" + end;
-                                os.write(s.getBytes("utf-8")); // 这样写是为了避免中文文件名乱码
+                                os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
                                 os.writeBytes(end);
                                 try (FileInputStream is = new FileInputStream((File) entry.getValue())) { // copy
                                     byte[] bs = new byte[4028];
@@ -335,9 +364,9 @@ public class Utils {
                                     while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
                                 }
                             } else {
-                                os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes("utf-8"));
+                                os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes(charset));
                                 os.writeBytes(end);
-                                os.write(entry.getValue() == null ? "".getBytes("utf-8") : entry.getValue().toString().getBytes("utf-8"));
+                                os.write(entry.getValue() == null ? "".getBytes(charset) : entry.getValue().toString().getBytes(charset));
                             }
                             os.writeBytes(end);
                         }
@@ -347,33 +376,49 @@ public class Utils {
                         StringBuilder sb = new StringBuilder();
                         for (Map.Entry<String, Object> entry : params.entrySet()) {
                             if (entry.getValue() != null) {
-                                sb.append(entry.getKey() + "=" + URLEncoder.encode(entry.getValue().toString(), "utf-8") + "&");
+                                sb.append(entry.getKey() + "=" + URLEncoder.encode(entry.getValue().toString(), charset.toString()) + "&");
                             }
                         }
-                        os.write(sb.toString().getBytes("utf-8"));
+                        os.write(sb.toString().getBytes(charset));
                         os.flush(); os.close();
                     }
                 }
                 // http 状态码
                 respCode = conn.getResponseCode();
                 // 保存cookie
-                for (String c : conn.getHeaderFields().get("Set-Cookie")) {
-                    String[] arr = c.split(";")[0].split("=");
-                    cookie(arr[0], arr[1]);
+                if (conn.getHeaderFields() != null) {
+                    List<String> cs = conn.getHeaderFields().get("Set-Cookie");
+                    if (cs == null) cs = conn.getHeaderFields().get("set-cookie");
+                    if (cs != null) {
+                        for (String c : cs) {
+                            String[] arr = c.split(";")[0].split("=");
+                            cookie(arr[0], arr[1]);
+                        }
+                    }
                 }
 
                 // 取结果
-                ret = conn.getInputStream().getText("utf-8");
+                StringBuilder sb = new StringBuilder();
+                try (Reader reader = new InputStreamReader(conn.getInputStream(), charset)) {
+                    char[] buf = new char[1024];
+                    int length = 0;
+                    while((length = reader.read(buf)) != -1) {
+                        sb.append(buf, 0, length);
+                    }
+                }
+                ret = sb.toString();
                 if (200 != respCode) {
-                    throw new Exception("Http error. code: ${responseCode}, url: $urlStr, resp: ${Objects.toString(ret, "")}")
+                    throw new RuntimeException("Http error. code: " +respCode+ ", url: " +urlStr+ ", resp: " + ret);
                 }
                 if (debug) {
-                    log.info("Send http: {}, params: {}, result: " + ret, urlStr, params?:bodyStr)
+                    log.info("Send http: {}, params: {}, result: " + ret, urlStr, params == null ? bodyStr : params);
                 }
+            } catch (Exception ex) {
+                log.error("Http error. " + urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret, ex);
             } finally {
-                conn?.disconnect()
+                if (conn != null) conn.disconnect();
             }
-            return ret
+            return ret;
         }
     }
 
@@ -398,5 +443,246 @@ public class Utils {
             throw new RuntimeException(e);
         }
         return urlStr;
+    }
+
+
+    /**
+     * 文件内容监控器(类linux tail)
+     * @return {@link Tailer}
+     */
+    public static Tailer tailer() {return new Tailer();}
+
+    /**
+     * 文件内容监控器(类linux tail)
+     */
+    public static class Tailer {
+        private Thread                    th;
+        private boolean                   stopFlag;
+        private Function<String, Boolean> lineFn;
+        private Executor exec;
+
+        /**
+         * 处理输出行
+         * @param lineFn 函数返回true 继续输出, 返回false则停止输出
+         */
+        public Tailer handle(Function<String, Boolean> lineFn) {this.lineFn = lineFn; return this;}
+        /**
+         * 设置处理线程池
+         * @param exec 线程池
+         */
+        public Tailer exec(Executor exec) {this.exec = exec; return this;}
+        /**
+         * 停止
+         */
+        public void stop() {this.stopFlag = true;}
+
+        /**
+         * tail 文件内容监控
+         * @param file 文件全路径
+         * @return {@link Tailer}
+         */
+        public Tailer tail(String file) { return tail(file, 5); }
+        /**
+         * tail 文件内容监控
+         * @param file 文件全路径
+         * @param follow 从最后第几行开始
+         * @return {@link Tailer}
+         */
+        public Tailer tail(String file, Integer follow) {
+            if (lineFn == null) lineFn = (line) -> {System.out.println(line); return true;};
+            Runnable fn = () -> {
+                String tName = Thread.currentThread().getName();
+                try {
+                    Thread.currentThread().setName("Tailer-" + file);
+                    run(file, (follow == null ? 0 : follow));
+                } catch (Exception ex) {
+                    log.error("Tail file " + file + " error", ex);
+                } finally {
+                    Thread.currentThread().setName(tName);
+                }
+            };
+            if (exec != null) {
+                exec.execute(fn);
+            } else {
+                th = new Thread(fn, "Tailer-" + file);
+                // th.setDaemon(true);
+                th.start();
+            }
+            return this;
+        }
+
+        private void run(String file, Integer follow) throws Exception {
+            try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+                Queue<String> buffer = (follow != null && follow > 0) ? new LinkedList<>() : null; // 用来保存最后几行(follow)数据
+
+                // 当前第一次到达文件结尾时,设为true
+                boolean firstEnd = false;
+                String line;
+                while (!stopFlag) {
+                    line = raf.readLine();
+                    if (line == null) { // 当读到文件结尾时(line为空即为文件结尾)
+                        if (firstEnd) {
+                            Thread.sleep(100L * new Random().nextInt(10));
+                            // raf.seek(file.length()) // 重启定位到文件结尾(有可能文件被重新写入了)
+                            continue;
+                        }
+                        firstEnd = true;
+                        if (buffer != null) { // 第一次到达结尾后, 清理buffer数据
+                            do {
+                                line = buffer.poll();
+                                if (line == null) break;
+                                this.stopFlag = !lineFn.apply(line);
+                            } while (!stopFlag);
+                            buffer = null;
+                        }
+                    } else { // 读到行有数据
+                        line = new String(line.getBytes("ISO-8859-1"),"utf-8");
+                        if (firstEnd) { // 直接处理行字符串
+                            stopFlag = !lineFn.apply(line);
+                        } else if (follow != null && follow > 0) {
+                            buffer.offer(line);
+                            if (buffer.size() > follow) buffer.poll();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * 把一个bean 转换成 一个map
+     * @param bean java bean
+     * @return {@link ToMap}
+     */
+    public static <T> ToMap toMapper(T bean) { return new ToMap<>(bean); }
+
+    /**
+     * 转换成Map
+     * @param <T>
+     */
+    public static class ToMap<T> {
+        private T                     bean;
+        private Map<String, String>   propAlias;
+        private final Set<String> ignore = new HashSet<>(Arrays.asList("class"));
+        private Map<String, Function> valueConverter;
+        private Map<String, Map<String, Function>> newProp;
+        private boolean               ignoreNull = false;// 默认不忽略空值属性
+        private Comparator<String>    comparator;
+        private Map<String, Object> result; //结果map
+        private Map<String, Object> attrs; //手动添加的属性
+
+        public ToMap(T bean) { this.bean = bean; }
+        public ToMap<T> aliasProp(String originPropName, String aliasName) {
+            if (originPropName == null || originPropName.isEmpty() || originPropName.trim().isEmpty()) throw new IllegalArgumentException("Param originPropName not empty");
+            if (aliasName == null || aliasName.isEmpty() || aliasName.trim().isEmpty()) throw new IllegalArgumentException("Param aliasName not empty");
+            if (propAlias == null) propAlias = new HashMap<>(7);
+            propAlias.put(originPropName, aliasName.trim());
+            return this;
+        }
+        public ToMap<T> showClassProp() { ignore.remove("class"); return this; }
+        public ToMap<T> ignoreNull(boolean ignoreNull) { this.ignoreNull = ignoreNull; return this; }
+        public ToMap<T> ignoreNull() { this.ignoreNull = true; return this; }
+        public ToMap<T> sort(Comparator<String> comparator) { this.comparator = comparator; return this; }
+        public ToMap<T> sort() { this.comparator = Comparator.naturalOrder(); return this; }
+        public ToMap<T> ignore(String... propNames) {
+            if (propNames == null) return this;
+            Collections.addAll(ignore, propNames);
+            return this;
+        }
+
+        /**
+         * 值转换
+         * @param propName 属性名
+         * @param converter 值转换器
+         * @return {@link ToMap}
+         */
+        public ToMap<T> addConverter(String propName, Function converter) {
+            if (propName == null || propName.isEmpty() || propName.trim().isEmpty()) throw new IllegalArgumentException("Param propName not empty");
+            if (converter == null) throw new IllegalArgumentException("Param converter required");
+            if (valueConverter == null) valueConverter = new HashMap<>(7);
+            valueConverter.put(propName, converter);
+            return this;
+        }
+
+        /**
+         * 值转换
+         * @param originPropName 原属性名
+         * @param newPropName 新属性名
+         * @param converter 值转换器
+         * @return {@link ToMap}
+         */
+        public ToMap<T> addConverter(String originPropName, String newPropName, Function converter) {
+            if (originPropName == null || originPropName.isEmpty() || originPropName.trim().isEmpty()) throw new IllegalArgumentException("Param originPropName not empty");
+            if (newPropName == null || newPropName.isEmpty() || newPropName.trim().isEmpty()) throw new IllegalArgumentException("Param newPropName not empty");
+            if (converter == null) throw new IllegalArgumentException("Param converter required");
+            if (newProp == null) { newProp = new HashMap<>(); }
+            newProp.computeIfAbsent(originPropName, s -> new HashMap<>(7)).put(newPropName, converter);
+            return this;
+        }
+
+        /**
+         * 手动添加属性
+         * @param pName 属性名
+         * @param value 属性值
+         * @return {@link ToMap}
+         */
+        public ToMap<T> add(String pName, Object value) {
+            if (attrs == null) attrs = new HashMap<>();
+            attrs.put(pName, value);
+            return this;
+        }
+
+
+        /**
+         * 填充属性
+         * @param pName 属性名
+         * @param originValue 属性原始值
+         */
+        protected void fill(String pName, Object originValue) {
+            if (result == null) throw new IllegalArgumentException("Please after build");
+            if (propAlias != null && propAlias.get(pName) != null) pName = propAlias.get(pName);
+            if (ignore.contains(pName)) return;
+            if (valueConverter != null && valueConverter.containsKey(pName)) {
+                Object v = valueConverter.get(pName).apply(originValue);
+                if (!(v == null && ignoreNull)) {result.put(pName, v);}
+            } else if (newProp != null && newProp.get(pName) != null) {
+                for (Iterator<Map.Entry<String, Function>> it = newProp.get(pName).entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<String, Function> e = it.next();
+                    Object v = e.getValue().apply(originValue);
+                    if (!(v == null && ignoreNull)) {result.put(e.getKey(), v);}
+                }
+            } else if (!(originValue == null && ignoreNull)) result.put(pName, originValue);
+        }
+
+
+        /**
+         * 开始构建 结果Map
+         * @return 结果Map
+         */
+        public Map<String, Object> build() {
+            result = comparator != null ? new TreeMap<>(comparator) : new LinkedHashMap();
+            if (bean == null) return result;
+            iterateMethod(bean.getClass(), method -> { // 遍历getter属性
+                try {
+                    if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") && method.getParameterCount() == 0) { // 属性
+                        String tmp = method.getName().replace("get", "");
+                        method.setAccessible(true);
+                        fill(Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1), method.invoke(bean));
+                    }
+                } catch (Exception e) { /** ignore **/ }
+            });
+
+            iterateField(bean.getClass(), field -> { // 遍历字段属性
+                if (!Modifier.isPublic(field.getModifiers())) return;
+                if (result.containsKey(field.getName())) return;
+                try {
+                    field.setAccessible(true);
+                    fill(field.getName(), field.get(bean));
+                } catch (Exception e) { /** ignore **/ }
+            });
+            if (attrs != null) attrs.forEach((s, o) -> fill(s, o));
+            return result;
+        }
     }
 }
