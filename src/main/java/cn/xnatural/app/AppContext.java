@@ -29,22 +29,50 @@ import static java.util.Collections.emptyList;
  * 4. 应用所有服务实例 {@link #sourceMap}
  */
 public class AppContext {
-    protected static final Logger                           log   = LoggerFactory.getLogger(AppContext.class);
+    protected static final Logger                log          = LoggerFactory.getLogger(AppContext.class);
+    /**
+     * 服务对象源
+     */
+    protected final        Map<String, Object>   sourceMap    = new ConcurrentHashMap<>();
+    /**
+     * 对列执行器映射
+     */
+    protected final        Map<String, Devourer> queues       = new ConcurrentHashMap<>();
+    /**
+     * 启动时间
+     */
+    public final           Date                  startup      = new Date();
+    /**
+     * 系统负载值 0 - 10
+     */
+    private                Integer               sysLoad      = 0;
+    /**
+     * jvm关闭钩子. kill
+     * System.exit(0)
+     */
+    protected final        Thread                shutdownHook = new Thread(() -> {
+        // 通知各个模块服务关闭
+        ep().fire("sys.stopping", EC.of(this).async(false).completeFn(ec -> {
+            exec().shutdown();
+            // 不删除的话会执行两遍
+            // if (shutdownHook) Runtime.getRuntime().removeShutdownHook(shutdownHook)
+        }));
+    }, "stop");
+
     /**
      * 初始化一个 {@link java.util.concurrent.ThreadPoolExecutor}
      * NOTE: 如果线程池在不停的创建线程, 有可能是因为 提交的 Runnable 的异常没有被处理.
      * see:  {@link java.util.concurrent.ThreadPoolExecutor#runWorker(java.util.concurrent.ThreadPoolExecutor.Worker)} 这里面当有异常抛出时 1128行代码 {@link java.util.concurrent.ThreadPoolExecutor#processWorkerExit(java.util.concurrent.ThreadPoolExecutor.Worker, boolean)}
      */
-    protected              LazySupplier<ThreadPoolExecutor> _exec = new LazySupplier<>(() -> {
+    protected final LazySupplier<ThreadPoolExecutor> _exec = new LazySupplier<>(() -> {
         log.debug("init sys executor ... ");
         Integer maxSize = getAttr("sys.exec.maximumPoolSize", Integer.class, 32);
         ThreadPoolExecutor exec = new ThreadPoolExecutor(
                 getAttr("sys.exec.corePoolSize", Integer.class, 8), maxSize,
-                getAttr("sys.exec.corePoolSize", Long.class, 4L), TimeUnit.HOURS,
+                getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
                 new LinkedBlockingQueue<>(maxSize * 2),
                 new ThreadFactory() {
-                    final AtomicInteger i = new AtomicInteger(1);
-
+                    AtomicInteger i = new AtomicInteger(1);
                     @Override
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "sys-" + i.getAndIncrement());
@@ -79,7 +107,7 @@ public class AppContext {
                 else if (getCorePoolSize() - ac > 0) sysLoad = 4;
                 else if (getCorePoolSize() == ac) sysLoad = 5;
                 else if (getQueue().size() > 0) sysLoad = 6;
-                // 超过核心线程的线程数在工作
+                    // 超过核心线程的线程数在工作
                 else if (getMaximumPoolSize() - ac > gap2 * 2) sysLoad = 7;
                 else if (getMaximumPoolSize() - ac > gap2) sysLoad = 8;
                 else if (getMaximumPoolSize() - ac > 0) sysLoad = 9;
@@ -95,11 +123,10 @@ public class AppContext {
      */
     public ExecutorService exec() { return _exec.get(); }
 
-
     /**
      * 初始化 事件中心
      */
-    protected              LazySupplier<EP>                 _ep   = new LazySupplier<>(() -> {
+    protected final LazySupplier<EP> _ep = new LazySupplier<>(() -> {
         log.debug("init ep ...");
         EP ep = new EP(exec(), LoggerFactory.getLogger(EP.class)) {
             @Override
@@ -117,46 +144,54 @@ public class AppContext {
         // 添加 ep 跟踪事件
         String track = getAttr("ep.track", String.class, null);
         if (track != null) {
-            Arrays.stream(track.split(",")).filter(s -> s != null && !s.trim().isEmpty()).map(s -> ep.addTrackEvent(s.trim()));
+            Arrays.stream(track.split(",")).filter(s -> s != null && !s.trim().isEmpty()).forEach(s -> ep.addTrackEvent(s.trim()));
         }
+        ep.addListenerSource(AppContext.this);
         return ep;
     });
-
     /**
      * 事件中心
      * @return EP
      */
     public EP ep() { return _ep.get(); }
 
-
     /**
-     * 服务对象源
+     * 环境属性配置.只支持properties文件
      */
-    protected final        Map<String, Object>   sourceMap    = new ConcurrentHashMap<>();
+    private final LazySupplier<Map<String, Object>> _env = new LazySupplier<>(() -> {
+        Map<String, Object> result = new ConcurrentHashMap<>();
+        System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
+        String configdir = (String) result.get("configdir"); // 配置文件的目录. 默认classpath路径
+        String configname = (String) result.getOrDefault("configname", "app");// 配置文件名. 默认app
+        String profile = (String) result.get("profile");
+        List<String> cfgNames = new LinkedList<>();
+        cfgNames.add(configname + ".properties");
+//        cfgNames.add(configname + ".yml");
+//        cfgNames.add(configname + ".yaml");
+        if (profile != null && !profile.trim().isEmpty()) {
+            cfgNames.add(configname + "-" + profile.trim() + ".properties");
+//            cfgNames.add(configname + "-" + profile.trim() + ".yml");
+//            cfgNames.add(configname + "-" + profile.trim() + ".yaml");
+        }
+        for (String name : cfgNames) {
+            try (InputStream is = (configdir == null || configdir.isEmpty()) ? getClass().getClassLoader().getResourceAsStream(name) : new FileInputStream(new File(configdir, name))) {
+                if (is == null) continue;
+                Properties p = new Properties();
+                p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+                p.forEach((k, v) -> result.put(k.toString(), v));
+                // new Yaml().loadAs(new InputStreamReader(is, StandardCharsets.UTF_8), Map.class).forEach((k, v) -> result.put(k.toString(), v));
+            } catch (IOException e) {
+                log.error("Load config file '" +name+ "' error", e);
+            }
+        }
+        System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
+        return result;
+    });
     /**
-     * 对列执行器映射
+     * 环境属性配置
+     * @return map
      */
-    protected final        Map<String, Devourer> queues  = new ConcurrentHashMap<>();
-    /**
-     * 启动时间
-     */
-    public final                  Date                  startup = new Date();
-    /**
-     * 系统负载值 0 - 10
-     */
-    private Integer                               sysLoad      = 0;
-    /**
-     * jvm关闭钩子. kill
-     * System.exit(0)
-     */
-    protected final Thread shutdownHook = new Thread(() -> {
-        // 通知各个模块服务关闭
-        ep().fire("sys.stopping", EC.of(this).async(false).completeFn(ec -> {
-            exec().shutdown();
-            // 不删除的话会执行两遍
-            // if (shutdownHook) Runtime.getRuntime().removeShutdownHook(shutdownHook)
-        }));
-    }, "stop");
+    public Map<String, Object> env() { return _env.get(); }
 
 
     /**
@@ -166,7 +201,6 @@ public class AppContext {
     public AppContext start() {
         log.info("Starting Application with PID {}, active profile: {}", Utils.pid(), getProfile());
         // 1. 初始化
-        ep().addListenerSource(this);
         ep().fire("sys.inited", EC.of(this));
         // 2. 通知所有服务启动
         ep().fire("sys.starting", EC.of(this).completeFn(ec -> {
@@ -344,45 +378,6 @@ public class AppContext {
 
 
     /**
-     * 环境属性配置
-     */
-    private final LazySupplier<Map<String, Object>> _env = new LazySupplier<>(() -> {
-        Map<String, Object> result = new ConcurrentHashMap<>();
-        System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
-        String configdir = (String) result.get("configdir"); // 配置文件的目录. 默认classpath路径
-        String configname = (String) result.getOrDefault("configname", "app");// 配置文件名. 默认app
-        String profile = (String) result.get("profile");
-        List<String> cfgNames = new LinkedList<>();
-        cfgNames.add(configname + ".properties");
-//        cfgNames.add(configname + ".yml");
-//        cfgNames.add(configname + ".yaml");
-        if (profile != null && !profile.trim().isEmpty()) {
-            cfgNames.add(configname + "-" + profile.trim() + ".properties");
-//            cfgNames.add(configname + "-" + profile.trim() + ".yml");
-//            cfgNames.add(configname + "-" + profile.trim() + ".yaml");
-        }
-        for (String name : cfgNames) {
-            try (InputStream is = (configdir == null || configdir.isEmpty()) ? getClass().getResourceAsStream(name) : new FileInputStream(new File(configdir, name))) {
-                if (is == null) continue;
-                Properties p = new Properties();
-                p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-                p.forEach((k, v) -> result.put(k.toString(), v));
-                // new Yaml().loadAs(new InputStreamReader(is, StandardCharsets.UTF_8), Map.class).forEach((k, v) -> result.put(k.toString(), v));
-            } catch (IOException e) {
-                log.error("Load config file '" +name+ "' error", e);
-            }
-        }
-        System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
-        return result;
-    });
-    /**
-     * 环境属性配置
-     * @return map
-     */
-    public Map<String, Object> env() { return _env.get(); }
-
-
-    /**
      * 为 source 包装 Executor
      * @param source 源对象
      * @return {@link Executor}
@@ -469,6 +464,21 @@ public class AppContext {
             @Override
             public String toString() { return "wrappedCoreEp: " + source; }
         };
+    }
+
+
+    /**
+     * 属性集:一组属性
+     * @return 属性集
+     */
+    public Map<String, Object> attrs(String key) {
+        Map<String, Object> result = new ConcurrentHashMap<>();
+        for (Map.Entry<String, Object> entry : env().entrySet()) {
+            if (entry.getKey().startsWith(key + ".")) {
+                result.put(entry.getKey().replace(key + ".", ""), entry.getValue());
+            }
+        }
+        return result;
     }
 
 

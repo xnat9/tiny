@@ -33,15 +33,16 @@ public class ServerTpl {
     protected       EP     ep;
     private final LazySupplier<AppContext> _app = new LazySupplier<>(() -> bean(AppContext.class));
     private final LazySupplier<ExecutorService> _exec = new LazySupplier<>(() -> bean(ExecutorService.class));
-    private final LazySupplier<Map<String, Object>> _config = new LazySupplier<>(() -> new HashMap<>());
+    //private final LazySupplier<Map<String, Object>> _config = new LazySupplier<>(() -> new HashMap<>());
 
 
     public ServerTpl(String name) {
         if (name == null || name.isEmpty()) throw new IllegalArgumentException("Param name not empty");
+        if (name.contains("$")) throw new IllegalArgumentException("Param name not allow contains '$'");
         this.name = name;
     }
     public ServerTpl() {
-        String tmp = getClass().getName().contains("$") ? getClass().getSuperclass().getSimpleName() : getClass().getSimpleName();
+        String tmp = getClass().getName().contains("$") ? getClass().getName().replace("$", "_") : getClass().getSimpleName();
         this.name = Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1);
     }
 
@@ -93,19 +94,19 @@ public class ServerTpl {
 
 
     /**
-     * 全局查找 对象
-     * @param type 对象类型
-     * @param name 对象名字
+     * 全局查找 bean
+     * @param type bean类型
+     * @param name bean名字
      * @return bean
      */
-    protected <T> T bean(Class<T> type, String name) { return ep == null ? null : (T) ep.fire("bean.get", type, name); }
+    protected <T> T bean(Class<T> type, String name) { return ep == null ? null : (T) ep.fire("bean.get", EC.of(this).sync().args(type, name)); }
 
     /**
-     * 全局查找 对象
-     * @param type 对象类型
+     * 全局查找 bean
+     * @param type bean类型
      * @return bean
      */
-    protected <T> T bean(Class<T> type) { return ep == null ? null : (T) ep.fire("bean.get", type, null); }
+    protected <T> T bean(Class<T> type) { return bean(type, null); }
 
 
     /**
@@ -193,15 +194,7 @@ public class ServerTpl {
      * 当前服务的属性集
      * @return 属性集
      */
-    public Map<String, Object> attrs() {
-        Map<String, Object> result = new HashMap<>();
-        for (Map.Entry<String, Object> entry : app().env().entrySet()) {
-            if (entry.getKey().startsWith(name + ".")) {
-                result.put(entry.getKey().replace(name + ".", ""), entry.getValue());
-            }
-        }
-        return result;
-    }
+    public Map<String, Object> attrs() { return app().attrs(name); }
 
 
     /**
