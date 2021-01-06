@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.util.Collections.emptyList;
 
@@ -184,6 +186,25 @@ public class AppContext {
                 log.error("Load config file '" +name+ "' error", e);
             }
         }
+
+        new Runnable() { // 替换 ${}
+            Pattern pattern = Pattern.compile("(\\$\\{(?<attr>[\\w\\._]+)\\})+");
+            AtomicInteger count = new AtomicInteger(0);
+            @Override
+            public void run() {
+                if (count.getAndIncrement() >= 3) return;
+                boolean f = false;
+                for (Map.Entry<String, Object> e : result.entrySet()) {
+                    if (e.getValue() == null) continue;
+                    Matcher m = pattern.matcher(e.getValue().toString());
+                    if (!m.find()) continue;
+                    f = true;
+                    result.put(e.getKey(), e.getValue().toString().replace(m.group(0), result.getOrDefault(m.group("attr"), "").toString()));
+                }
+                if (f) run(); // 一直解析直到所有值都被替换完成;
+            }
+        }.run();
+
         System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
         return result;
     });

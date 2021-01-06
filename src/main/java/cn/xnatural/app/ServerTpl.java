@@ -159,7 +159,13 @@ public class ServerTpl {
      * @param names bean 名字
      */
     protected ServerTpl exposeBean(Object bean, String...names) {
+        if (bean == null) return this;
         if (beanCtx == null) beanCtx = new HashMap<>();
+        if (names == null || names.length < 1) {
+            names = new String[]{
+                    bean.getClass().getName().contains("$") ? bean.getClass().getName().replace("$", "_") : bean.getClass().getSimpleName()
+            };
+        }
         for (String n : names) {
             if (beanCtx.get(n) != null) log.warn("override exist bean name '{}'", n);
             beanCtx.put(n, bean);
