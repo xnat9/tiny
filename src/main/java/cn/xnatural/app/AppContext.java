@@ -26,8 +26,8 @@ import static java.util.Collections.emptyList;
 /**
  * 应用执行上下文
  * 1. 应用执行环境属性 {@link #env}
- * 2. 应用执行公用唯一线程池 {@link #_exec}
- * 3. 应用事件中心 {@link #_ep}
+ * 2. 应用执行公用唯一线程池 {@link #exec}
+ * 3. 应用事件中心 {@link #ep}
  * 4. 应用所有服务实例 {@link #sourceMap}
  */
 public class AppContext {
@@ -134,8 +134,7 @@ public class AppContext {
             @Override
             protected Object doPublish(String eName, EC ec) {
                 if ("sys.starting".equals(eName) || "sys.stopping".equals(eName) || "sys.started".equals(eName)) {
-                    if (ec.source() != AppContext.this)
-                        throw new UnsupportedOperationException("not allow fire event '" + eName + "'");
+                    if (ec.source() != AppContext.this) throw new UnsupportedOperationException("not allow fire event '" + eName + "'");
                 }
                 return super.doPublish(eName, ec);
             }
@@ -161,7 +160,7 @@ public class AppContext {
      * 环境属性配置.只支持properties文件
      */
     private final LazySupplier<Map<String, Object>> _env = new LazySupplier<>(() -> {
-        Map<String, Object> result = new ConcurrentHashMap<>();
+        Map<String, Object> result = new ConcurrentHashMap<>(); // 结果属性集
         System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
         String configdir = (String) result.get("configdir"); // 配置文件的目录. 默认classpath路径
         String configname = (String) result.getOrDefault("configname", "app");// 配置文件名. 默认app
@@ -201,7 +200,7 @@ public class AppContext {
                     f = true;
                     result.put(e.getKey(), e.getValue().toString().replace(m.group(0), result.getOrDefault(m.group("attr"), "").toString()));
                 }
-                if (f) run(); // 一直解析直到所有值都被替换完成;
+                if (f) run(); // 一直解析直到所有值都被替换完成
             }
         }.run();
 
