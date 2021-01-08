@@ -103,6 +103,13 @@ app.addSource(new ServerTpl() {
 });
 ```
 
+#### 环境配置
+* 系统属性: configdir 指定配置文件路径. 默认:类路径
+* 系统属性: configname 指定配置文件名. 默认:app
+* 系统属性: profile 指定启用特定的配置
+* 只读取properties文件. 按顺序读取app.properties, app-[profile].properties 两个配置文件
+* 系统属性: System.getProperties() 优先级最高
+
 #### 应用例子
 [AppTest](https://gitee.com/xnat/app/raw/master/src/test/main/java/AppTest.java)
 
