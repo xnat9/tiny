@@ -562,15 +562,15 @@ public class Utils {
      * @param <T>
      */
     public static class ToMap<T> {
-        private T                     bean;
-        private Map<String, String>   propAlias;
-        private final Set<String> ignore = new HashSet<>(Arrays.asList("class"));
-        private Map<String, Function> valueConverter;
+        private T                                  bean;
+        private Map<String, String>                propAlias;
+        private final Set<String>                  ignore = new HashSet<>(Arrays.asList("class"));
+        private Map<String, Function>              valueConverter;
         private Map<String, Map<String, Function>> newProp;
-        private boolean               ignoreNull = false;// 默认不忽略空值属性
-        private Comparator<String>    comparator;
-        private Map<String, Object> result; //结果map
-        private Map<String, Object> attrs; //手动添加的属性
+        private boolean                            ignoreNull = false;// 默认不忽略空值属性
+        private Comparator<String>                 comparator;
+        private Map<String, Object>                result; //结果map
+        private Map<String, Object>                extraAttrs; //手动添加的额外的属性
 
         public ToMap(T bean) { this.bean = bean; }
         public ToMap<T> aliasProp(String originPropName, String aliasName) {
@@ -628,8 +628,8 @@ public class Utils {
          * @return {@link ToMap}
          */
         public ToMap<T> add(String pName, Object value) {
-            if (attrs == null) attrs = new HashMap<>();
-            attrs.put(pName, value);
+            if (extraAttrs == null) extraAttrs = new HashMap<>();
+            extraAttrs.put(pName, value);
             return this;
         }
 
@@ -641,8 +641,6 @@ public class Utils {
          */
         protected void fill(String pName, Object originValue) {
             if (result == null) throw new IllegalArgumentException("Please after build");
-            if (propAlias != null && propAlias.get(pName) != null) pName = propAlias.get(pName);
-            if (ignore.contains(pName)) return;
             if (valueConverter != null && valueConverter.containsKey(pName)) {
                 Object v = valueConverter.get(pName).apply(originValue);
                 if (!(v == null && ignoreNull)) {result.put(pName, v);}
@@ -663,25 +661,42 @@ public class Utils {
         public Map<String, Object> build() {
             result = comparator != null ? new TreeMap<>(comparator) : new LinkedHashMap();
             if (bean == null) return result;
+            Function<String, String> nameValid = pName -> {
+                if (propAlias != null && propAlias.get(pName) != null) pName = propAlias.get(pName);
+                if (ignore.contains(pName)) return null;
+                return pName;
+            };
             iterateMethod(bean.getClass(), method -> { // 遍历getter属性
                 try {
                     if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") && method.getParameterCount() == 0 && !"getMetaClass".equals(method.getName())) { // 属性
                         String tmp = method.getName().replace("get", "");
                         method.setAccessible(true);
-                        fill(Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1), method.invoke(bean));
+                        String pName = Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1);
+                        pName = nameValid.apply(pName);
+                        if (pName != null) fill(pName, method.invoke(bean));
                     }
                 } catch (Exception e) { /** ignore **/ }
             });
 
             iterateField(bean.getClass(), field -> { // 遍历字段属性
                 if (!Modifier.isPublic(field.getModifiers())) return;
-                if (result.containsKey(field.getName())) return;
+                if (!(String.class.equals(field.getType()) || Number.class.isAssignableFrom(field.getType()) ||
+                        URL.class.equals(field.getType()) || URI.class.equals(field.getType())
+                )) return; //只输出普通属性
+                String pName = field.getName();
+                if (result.containsKey(pName) || pName.contains("$")) return; //去掉 名字包含 $ 的字段
+                pName = nameValid.apply(pName);
+                if (pName == null) return;
                 try {
                     field.setAccessible(true);
-                    fill(field.getName(), field.get(bean));
+                    fill(pName, field.get(bean));
                 } catch (Exception e) { /** ignore **/ }
             });
-            if (attrs != null) attrs.forEach((s, o) -> fill(s, o));
+            if (extraAttrs != null) extraAttrs.forEach((pName, o) -> {
+                pName = nameValid.apply(pName);
+                if (pName == null) return;
+                fill(pName, o);
+            });
             return result;
         }
     }

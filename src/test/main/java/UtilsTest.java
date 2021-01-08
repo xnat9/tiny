@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -79,6 +80,7 @@ public class UtilsTest {
                     public String p4 = "p4";
                     public long time = System.currentTimeMillis();
                     public String p5;
+                    public BigInteger p6 = BigInteger.valueOf(6);
 
                     public Integer getP2() { return p2; }
                 }).addConverter("time", o -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date((long) o)))
