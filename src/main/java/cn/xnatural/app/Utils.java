@@ -665,7 +665,7 @@ public class Utils {
             if (bean == null) return result;
             iterateMethod(bean.getClass(), method -> { // 遍历getter属性
                 try {
-                    if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") && method.getParameterCount() == 0) { // 属性
+                    if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") && method.getParameterCount() == 0 && !"getMetaClass".equals(method.getName())) { // 属性
                         String tmp = method.getName().replace("get", "");
                         method.setAccessible(true);
                         fill(Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1), method.invoke(bean));
