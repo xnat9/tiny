@@ -103,6 +103,11 @@ app.addSource(new ServerTpl() {
 });
 ```
 
+#### 应用例子
+[AppTest](https://gitee.com/xnat/app/raw/master/src/test/main/java/AppTest.java)
+
+[GY](https://gitee.com/xnat/app/raw/master/src/test/main/java/AppTest.java)
+
 ### 参与贡献
 
 xnatural@msn.cn
