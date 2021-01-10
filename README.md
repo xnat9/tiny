@@ -72,7 +72,7 @@ app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
 
 #### 动态添加服务
 ```
-@EL(name = "sys.inited')
+@EL(name = "sys.inited")
 void sysInited() {
     if (!app.attrs("redis").isEmpty()) { //根据配置是否有redis,创建redis客户端工具
         app.addSource(new RedisClient())

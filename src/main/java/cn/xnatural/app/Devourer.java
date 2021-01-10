@@ -94,7 +94,6 @@ public class Devourer {
     protected void trigger() {
         if (waiting.isEmpty()) return;
         // TODO 会有 cas aba 问题?
-        // if (!running.compareAndSet(false, true)) return;
         if (!parallelLock.compareAndSet(false, true)) return;
         // 1.只有一个线程执行,必须保证正在执行的函数不超过 parallelLimit
         // 2.必须保证这里waiting对列中不为空

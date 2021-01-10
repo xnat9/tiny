@@ -645,10 +645,11 @@ public class Utils {
                 Object v = valueConverter.get(pName).apply(originValue);
                 if (!(v == null && ignoreNull)) {result.put(pName, v);}
             } else if (newProp != null && newProp.get(pName) != null) {
+                if (!(originValue == null && ignoreNull) && !ignore.contains(pName)) result.put(pName, originValue);
                 for (Iterator<Map.Entry<String, Function>> it = newProp.get(pName).entrySet().iterator(); it.hasNext(); ) {
                     Map.Entry<String, Function> e = it.next();
                     Object v = e.getValue().apply(originValue);
-                    if (!(v == null && ignoreNull)) {result.put(e.getKey(), v);}
+                    if (!(v == null && ignoreNull) && !ignore.contains(pName)) {result.put(e.getKey(), v);}
                 }
             } else if (!(originValue == null && ignoreNull)) result.put(pName, originValue);
         }
