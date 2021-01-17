@@ -33,7 +33,7 @@ public class LazySupplier<T> implements Supplier<T> {
             synchronized (this) {
                 if (!once) {
                     result = supplier.get();
-                    once = true;
+                    if (result != null) once = true; //为空,则重新取
                 }
             }
         }
