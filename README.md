@@ -11,7 +11,7 @@
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 

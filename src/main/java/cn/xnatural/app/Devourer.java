@@ -48,7 +48,7 @@ public class Devourer {
     /**
      * 错误处理函数
      */
-    protected BiConsumer<Exception, Devourer> errorHandler;
+    protected BiConsumer<Throwable, Devourer> errorHandler;
 
 
     /**
@@ -103,12 +103,12 @@ public class Devourer {
             try {
                 task = waiting.poll();
                 if (task != null) { task.run(); }
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 if (task != null && failMaxKeep != null && failMaxKeep > 0 && (getWaitingCount() < failMaxKeep)) waiting.addFirst(task);
                 if (errorHandler != null) {
                     try {
                         errorHandler.accept(ex, this);
-                    } catch (Exception exx) {
+                    } catch (Throwable exx) {
                         log.error(key, exx);
                     }
                 } else {
@@ -150,7 +150,7 @@ public class Devourer {
      * @param handler 错误处理器
      * @return {@link Devourer}
      */
-    public Devourer errorHandle(BiConsumer<Exception, Devourer> handler) {
+    public Devourer errorHandle(BiConsumer<Throwable, Devourer> handler) {
         this.errorHandler = handler;
         return this;
     }
