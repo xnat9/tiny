@@ -157,7 +157,7 @@ public class AppContext {
     public EP ep() { return _ep.get(); }
 
     /**
-     * 环境属性配置.只支持properties文件
+     * 环境属性配置.只支持properties文件, 支持${}属性替换
      */
     private final LazySupplier<Map<String, Object>> _env = new LazySupplier<>(() -> {
         Map<String, Object> result = new ConcurrentHashMap<>(); // 结果属性集
@@ -309,7 +309,7 @@ public class AppContext {
 
     /**
      * 为bean对象中的{@link javax.inject.Inject}注解字段注入对应的bean对象
-     * @param source object
+     * @param source bean
      */
     @EL(name = "inject", async = false)
     public void inject(Object source) {
@@ -526,14 +526,16 @@ public class AppContext {
     /**
      * 系统名字. 用于多个系统启动区别
      */
-    public String name() { return getAttr("sys.name", String.class, "app"); }
+    protected final LazySupplier<String> _name = new LazySupplier<>(() -> getAttr("sys.name", String.class, "app"));
+    public String name() { return _name.get(); }
 
 
     /**
      * 实例Id
      * NOTE: 保证唯一
      */
-    public String id() { return getAttr("sys.id", String.class, Utils.random(10, name() + "_", null)); }
+    protected final LazySupplier<String> _id = new LazySupplier<>(() -> getAttr("sys.id", String.class, Utils.random(10, name() + "_", null)));
+    public String id() { return _id.get(); }
 
 
     /**
