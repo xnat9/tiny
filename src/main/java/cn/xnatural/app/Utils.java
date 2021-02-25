@@ -1,6 +1,5 @@
 package cn.xnatural.app;
 
-import com.alibaba.fastjson.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -345,9 +344,8 @@ public class Utils {
 
                 if ("POST".equals(method)) {
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-                    if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && ((params != null && !params.isEmpty()) || (bodyStr != null && !bodyStr.isEmpty()))) {
-                        if (bodyStr == null) os.write(JSON.toJSONString(params).getBytes());
-                        else os.write(bodyStr.getBytes(charset));
+                    if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && bodyStr != null) {
+                        os.write(bodyStr.getBytes(charset));
                         os.flush(); os.close();
                     } else if (isMulti && (params != null && !params.isEmpty())) {
                         String end = "\r\n";

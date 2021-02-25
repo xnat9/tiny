@@ -9,6 +9,8 @@
     <packaging>jar</packaging>
     <version>1.0.2</version>
 
+    <name>app</name>
+    <description>java轻量级通用框架</description>
     <url>https://gitee.com/xnat/app</url>
 
     <dependencies>
@@ -32,11 +34,11 @@
             <artifactId>enet-event</artifactId>
             <version>0.0.17</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.75</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba</groupId>-->
+<!--            <artifactId>fastjson</artifactId>-->
+<!--            <version>1.2.75</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -63,6 +65,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>cn.xnatural.remoter</groupId>
+            <artifactId>remoter</artifactId>
+            <version>1.0.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>cn.xnatural.jpa</groupId>
             <artifactId>jpa</artifactId>
             <version>1.0.2</version>
@@ -81,10 +89,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
-    <name>app</name>
-    <description>轻量级java应用框架模板</description>
 
     <licenses>
         <license>
