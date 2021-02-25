@@ -3,8 +3,13 @@ import cn.xnatural.app.ServerTpl;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.http.HttpServer;
 import cn.xnatural.jpa.Repo;
+import cn.xnatural.remoter.Remoter;
+import cn.xnatural.sched.Sched;
 
 import javax.inject.Named;
+import java.time.Duration;
+import java.util.Date;
+import java.util.function.Supplier;
 
 public class AppTest {
 
@@ -53,6 +58,43 @@ public class AppTest {
 
             @EL(name = "sys.stopping", async = true)
             void stop() { if (repo != null) repo.close(); }
+        });
+        app.addSource(new ServerTpl("sched") { // 定时任务
+            Sched sched;
+            @EL(name = "sys.starting", async = true)
+            void start() {
+                sched = new Sched(attrs(), exec()).init();
+                exposeBean(sched);
+                ep.fire(name + ".started");
+            }
+            @EL(name = "sched.after")
+            void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
+            @EL(name = "sched.time")
+            void time(Date time, Runnable fn) {sched.time(time, fn);}
+            @EL(name = "sched.cron")
+            void cron(String cron, Runnable fn) {sched.cron(cron, fn);}
+            @EL(name = "sched.dyn")
+            void dyn(Supplier<Date> dateSupplier, Runnable fn) {sched.dyn(dateSupplier, fn);}
+            @EL(name = "sys.stopping", async = true)
+            void stop() { if (sched != null) sched.stop(); }
+        });
+        app.addSource(new ServerTpl("remoter") {
+            Remoter remoter;
+            @EL(name = "sched.started")
+            void start() {
+                remoter = new Remoter(app.name(), app.id(), attrs(), exec(), ep, bean(Sched.class));
+                exposeBean(remoter);
+                exposeBean(remoter.getAioClient());
+                ep.fire(name + ".started");
+            }
+
+            @EL(name = "sys.heartbeat", async = true)
+            void heartbeat() {
+                remoter.sync();
+                remoter.getAioServer().clean();
+            }
+            @EL(name = "sys.stopping", async = true)
+            void stop() { remoter.stop(); }
         });
         app.start();
     }

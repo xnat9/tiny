@@ -11,6 +11,8 @@ import java.util.function.BiConsumer;
 
 /**
  * 对列执行器
+ * 按顺序执行添加的Runnable
+ * 当需要按顺序控制任务 一个一个, 两个两个... 的执行任务时
  */
 public class Devourer {
     protected static final Logger log = LoggerFactory.getLogger(Devourer.class);
@@ -64,7 +66,7 @@ public class Devourer {
     }
 
     public Devourer() {
-        this.key = Devourer.class.getSimpleName() + "@" +Integer.toHexString(hashCode());
+        this.key = Devourer.class.getSimpleName() + "@" + Integer.toHexString(hashCode());
         this.exec = Executors.newFixedThreadPool(4, new ThreadFactory() {
             AtomicInteger i = new AtomicInteger(0);
             @Override

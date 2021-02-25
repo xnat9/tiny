@@ -18,6 +18,7 @@
 <!--	</appender>-->
 
 	<logger name="cn.xnatural.app" level="info"/>
+	<logger name="cn.xnatural.remoter" level="info"/>
 
 	<root level="INFO">
 <!--		<appender-ref ref="DETAIL"/>-->

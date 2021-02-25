@@ -13,7 +13,7 @@ public class LazySupplier<T> implements Supplier<T> {
     private T result;
 
     public LazySupplier(Supplier<T> supplier) {
-        if (supplier == null) throw new NullPointerException("supplier is null");
+        if (supplier == null) throw new NullPointerException("Param supplier is null");
         this.supplier = supplier;
     }
 
