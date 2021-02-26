@@ -236,7 +236,6 @@ public class Utils {
         /**
          *  设置 content-type
          * @param contentType application/json, multipart/form-data, application/x-www-form-urlencoded, text/plain
-         * @return
          */
         public Httper contentType(String contentType) { this.contentType = contentType; return this; }
         public Httper jsonBody(String jsonStr) { this.bodyStr = jsonStr; if (contentType == null) contentType = "application/json"; return this; }
@@ -250,7 +249,6 @@ public class Utils {
          * 添加参数
          * @param name 参数名
          * @param value 支持 {@link File}
-         * @return
          */
         public Httper param(String name, Object value) {
             if (params == null) params = new LinkedHashMap<>();

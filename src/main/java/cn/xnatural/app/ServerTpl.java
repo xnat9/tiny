@@ -219,7 +219,7 @@ public class ServerTpl {
      * 获取属性
      * @param key 属性key
      * @param type 值类型
-     * @param key 默认值
+     * @param defaultValue 默认值
      * @return 属性值
      */
     public <T> T getAttr(String key, Class<T> type, T defaultValue) {
