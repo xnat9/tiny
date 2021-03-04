@@ -121,13 +121,39 @@ app.addSource(new ServerTpl() {
 * 系统属性: System.getProperties() 优先级最高
 
 #### 对列执行器(Devourer)
-当需要按顺序控制任务 一个一个, 两个两个... 的执行任务时
+当需要按顺序控制任务 一个一个, 两个两个... 的执行时
 
 服务基础类(ServerTpl)提供方法: queue
 
-例: queue('对列名', () -> 执行)
+```
+// 初始化一个 save 对列执行器
+queue("save")
+    .failMaxKeep(10000) // 最多保留失败的任务个数, 默认不保留
+    .parallel(2) // 最多同时执行任务数, 默认1(one-by-one)
+    .errorHandle {ex, devourer ->
+        // 当任务执行抛错时执行
+    };
+```
+```
+// 添加任务执行, 方法1
+queue("save", () -> {
+    // 执行任务
+});
+// 添加任务执行, 方法2
+queue("save").offer(() -> {
+    // 执行任务
+});
+```
+```
+// 暂停执行(下一个版本1.0.3), 一般用于发生错误时
+// 注: 必须有新的任务入对, 重新触发继续执行
+queue("save")
+    .errorHandle {ex, devourer ->
+        // 发生错误时, 让对列暂停执行(不影响新任务入对)
+        devourer.suspend(Duration.ofSeconds(180));
+    };
+```
 
-例: queue('对列名').parallel(2) // 两个两个执行
 
 #### http客户端
 ```

@@ -3,6 +3,7 @@ package cn.xnatural.app;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Deque;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,6 +52,10 @@ public class Devourer {
      * 错误处理函数
      */
     protected BiConsumer<Throwable, Devourer> errorHandler;
+    /**
+     * 暂停器
+     */
+    protected Pause pause;
 
 
     /**
@@ -70,9 +75,7 @@ public class Devourer {
         this.exec = Executors.newFixedThreadPool(4, new ThreadFactory() {
             AtomicInteger i = new AtomicInteger(0);
             @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, key + "-" + i.incrementAndGet());
-            }
+            public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
         });
     }
 
@@ -94,6 +97,10 @@ public class Devourer {
      * 不断的从 {@link #waiting} 对列中取出执行
      */
     protected void trigger() {
+        if (pause != null) { // 是否设置了暂停
+            if (pause.isTimeout()) pause = null;
+            else return; // 暂停时间未到
+        }
         if (waiting.isEmpty()) return;
         // TODO 会有 cas aba 问题?
         if (!parallelLock.compareAndSet(false, true)) return;
@@ -165,6 +172,18 @@ public class Devourer {
      * @return {@link Devourer}
      */
     public Devourer failMaxKeep(Integer maxKeep) { this.failMaxKeep = maxKeep; return this; }
+
+
+    /**
+     * 暂停一段时间
+     * @NOTE 必须有新的任务入对, 重新触发继续执行
+     * @param duration 一段时间
+     * @return {@link Devourer}
+     */
+    public Devourer suspend(Duration duration) {
+        pause = new Pause(duration);
+        return this;
+    }
 
 
     /**
