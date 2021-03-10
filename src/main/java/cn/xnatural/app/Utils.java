@@ -665,7 +665,8 @@ public class Utils {
             };
             iterateMethod(bean.getClass(), method -> { // 遍历getter属性
                 try {
-                    if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") && method.getParameterCount() == 0 && !"getMetaClass".equals(method.getName())) { // 属性
+                    if (!void.class.equals(method.getReturnType()) && method.getName().startsWith("get") &&
+                            method.getParameterCount() == 0 && !"getMetaClass".equals(method.getName()) && !Modifier.isStatic(method.getModifiers())) { // 属性
                         String tmp = method.getName().replace("get", "");
                         method.setAccessible(true);
                         String pName = Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1);
@@ -676,7 +677,7 @@ public class Utils {
             });
 
             iterateField(bean.getClass(), field -> { // 遍历字段属性
-                if (!Modifier.isPublic(field.getModifiers())) return;
+                if (!Modifier.isPublic(field.getModifiers()) || Modifier.isStatic(field.getModifiers())) return;
                 if (!(String.class.equals(field.getType()) || Number.class.isAssignableFrom(field.getType()) ||
                         URL.class.equals(field.getType()) || URI.class.equals(field.getType())
                 )) return; //只输出普通属性
