@@ -130,7 +130,7 @@ app.addSource(new ServerTpl() {
 queue("save")
     .failMaxKeep(10000) // 最多保留失败的任务个数, 默认不保留
     .parallel(2) // 最多同时执行任务数, 默认1(one-by-one)
-    .errorHandle {ex, devourer ->
+    .errorHandle {ex, me ->
         // 当任务执行抛错时执行
     };
 ```
@@ -148,10 +148,23 @@ queue("save").offer(() -> {
 // 暂停执行(下一个版本1.0.3), 一般用于发生错误时
 // 注: 必须有新的任务入对, 重新触发继续执行
 queue("save")
-    .errorHandle {ex, devourer ->
+    .errorHandle {ex, me ->
         // 发生错误时, 让对列暂停执行(不影响新任务入对)
-        devourer.suspend(Duration.ofSeconds(180));
+        me.suspend(Duration.ofSeconds(180));
     };
+```
+#### 延迟对象 LazySupplier
+封装是一个延迟计算值
+```
+private final LazySupplier<String> _id = new LazySupplier<>(() -> {
+    String id = getHeader("X-Request-ID");
+    if (id != null && !id.isEmpty()) return id;
+    return UUID.randomUUID().toString().replace("-", "");
+});
+```
+延迟获取属性值
+```
+LazySupplier<String> _name = new LazySupplier<>(() -> getAttr("sys.name", String.class, "app"));
 ```
 
 
@@ -213,6 +226,6 @@ Utils.toMapper(bean).showClassProp().build()
 [rule](https://gitee.com/xnat/rule)
 
 
-#### 参与贡献
+### 参与贡献
 
 xnatural@msn.cn
