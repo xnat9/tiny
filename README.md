@@ -20,7 +20,7 @@
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 
@@ -145,7 +145,7 @@ queue("save").offer(() -> {
 });
 ```
 ```
-// 暂停执行(下一个版本1.0.3), 一般用于发生错误时
+// 暂停执行, 一般用于发生错误时
 // 注: 必须有新的任务入对, 重新触发继续执行
 queue("save")
     .errorHandle {ex, me ->
