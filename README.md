@@ -16,7 +16,7 @@
 * sys.stopping: 应用停止事件(kill pid)
 
 ### 安装教程
-```
+```xml
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
@@ -29,7 +29,7 @@
 [sched](https://gitee.com/xnat/sched), [remoter](https://gitee.com/xnat/remoter)
 
 ### 初始化
-```
+```java
 AppContext app = new AppContext(); // 创建一个应用
 app.addSource(new ServerTpl("server1") { // 添加服务 server1
     @EL(name = "sys.starting")
@@ -43,7 +43,7 @@ app.start();
 
 #### 添加http服务
 web.hp=:8080
-```
+```java
 app.addSource(new ServerTpl("web") { //添加http服务
     HttpServer server;
     @EL(name = "sys.starting", async = true)
@@ -64,7 +64,7 @@ app.addSource(new ServerTpl("web") { //添加http服务
 
 #### 添加jpa
 jpa_local.url=jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root
-```
+```java
 app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
     Repo repo;
     @EL(name = "sys.starting", async = true)
@@ -80,7 +80,7 @@ app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
 ```
 
 #### 动态添加服务
-```
+```java
 @EL(name = "sys.inited")
 void sysInited() {
     if (!app.attrs("redis").isEmpty()) { //根据配置是否有redis,创建redis客户端工具
@@ -90,7 +90,7 @@ void sysInited() {
 ```
 
 #### bean注入
-```
+```java
 app.addSource(new ServerTpl() {
     @Named ServerTpl server1; //自动注入, 按类型和名字
     @Inject Repo repo;  //自动注入, 按类型
@@ -103,7 +103,7 @@ app.addSource(new ServerTpl() {
 ```
 
 #### 动态bean获取
-```
+```java
 app.addSource(new ServerTpl() {
     @EL(name = "sys.started")
     void start() {
@@ -125,7 +125,7 @@ app.addSource(new ServerTpl() {
 
 服务基础类(ServerTpl)提供方法: queue
 
-```
+```java
 // 初始化一个 save 对列执行器
 queue("save")
     .failMaxKeep(10000) // 最多保留失败的任务个数, 默认不保留
@@ -134,7 +134,7 @@ queue("save")
         // 当任务执行抛错时执行
     };
 ```
-```
+```java
 // 添加任务执行, 方法1
 queue("save", () -> {
     // 执行任务
@@ -144,7 +144,7 @@ queue("save").offer(() -> {
     // 执行任务
 });
 ```
-```
+```java
 // 暂停执行, 一般用于发生错误时
 // 注: 必须有新的任务入对, 重新触发继续执行
 queue("save")
@@ -155,7 +155,7 @@ queue("save")
 ```
 #### 延迟对象 LazySupplier
 封装是一个延迟计算值
-```
+```java
 private final LazySupplier<String> _id = new LazySupplier<>(() -> {
     String id = getHeader("X-Request-ID");
     if (id != null && !id.isEmpty()) return id;
@@ -163,37 +163,37 @@ private final LazySupplier<String> _id = new LazySupplier<>(() -> {
 });
 ```
 延迟获取属性值
-```
+```java
 LazySupplier<String> _name = new LazySupplier<>(() -> getAttr("sys.name", String.class, "app"));
 ```
 
 
 #### http客户端
-```
+```java
 // get
 Utils.http().get("http://xnatural.cn:9090/test/cus?p2=2").param("p1", 1).debug().execute();
 ```
-```
+```java
 // post
 Utils.http().post("http://xnatural.cn:9090/test/cus").debug().execute();
 ```
-```
+```java
 // post 表单
 Utils.http().post("http://xnatural.cn:9090/test/form").param("p1", "p1").debug().execute();
 ```
-```
+```java
 // post 文件
 Utils.http().post("http://xnatural.cn:9090/test/upload")
     .param("file", new File("d:/tmp/1.txt"))
     .debug().execute();
 ```
-```
+```java
 // post json
 Utils.http().post("http://xnatural.cn:9090/test/json")
     .jsonBody(new JSONObject().fluentPut("p1", 1).toString())
     .debug().execute();
 ```
-```
+```java
 // post 文本
 Utils.http().post("http://xnatural.cn:9090/test/string").debug()
         .textBody("xxxxxxxxxxxxxxxx")
@@ -201,7 +201,7 @@ Utils.http().post("http://xnatural.cn:9090/test/string").debug()
 ```
 
 #### Map构建器
-```
+```java
 // 把bean转换成map
 Utils.toMapper(bean).build()
 // 添加属性
