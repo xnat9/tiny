@@ -176,13 +176,29 @@ public class Devourer {
 
     /**
      * 暂停一段时间
-     * @NOTE 必须有新的任务入对, 重新触发继续执行
+     * @NOTE 继续执行条件: 必须有新的任务入对, 或者手动调用 {@link #resume()}
      * @param duration 一段时间
      * @return {@link Devourer}
      */
-    public Devourer suspend(Duration duration) {
-        pause = new Pause(duration);
-        return this;
+    public Devourer suspend(Duration duration) { pause = new Pause(duration); return this; }
+
+
+    /**
+     * 手动恢复执行
+     * @return {@link Devourer}
+     */
+    public Devourer resume() { pause = null; return this; }
+
+
+    /**
+     * 是否是暂停状态
+     * @return true: 暂停中
+     */
+    public boolean isSuspended() {
+        try {
+            if (pause != null && !pause.isTimeout()) return true;
+        } catch (NullPointerException npt) { /** trigger方法并发有可能把pause置null **/ }
+        return false;
     }
 
 

@@ -7,7 +7,7 @@
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 
     <name>app</name>
     <description>java轻量级通用框架</description>
@@ -19,11 +19,6 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.30</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.yaml</groupId>-->
-<!--            <artifactId>snakeyaml</artifactId>-->
-<!--            <version>1.27</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
@@ -34,12 +29,6 @@
             <artifactId>enet-event</artifactId>
             <version>0.0.17</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.alibaba</groupId>-->
-<!--            <artifactId>fastjson</artifactId>-->
-<!--            <version>1.2.75</version>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -55,7 +44,7 @@
         <dependency>
             <groupId>cn.xnatural.http</groupId>
             <artifactId>http</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -73,7 +62,7 @@
         <dependency>
             <groupId>cn.xnatural.jpa</groupId>
             <artifactId>jpa</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
