@@ -276,6 +276,7 @@ public class Utils {
             String ret = null;
             HttpURLConnection conn = null;
             boolean isMulti = false; // 是否为 multipart/form-data 提交
+            Exception ex = null;
             try {
                 URL url = null;
                 if (urlStr == null || urlStr.isEmpty()) throw new IllegalArgumentException("url不能为空");
@@ -403,17 +404,21 @@ public class Utils {
                     }
                 }
                 ret = sb.toString();
-                if (200 != respCode) {
-                    throw new RuntimeException("Http error. code: " +respCode+ ", url: " +urlStr+ ", resp: " + ret);
-                }
-                if (debug) {
-                    log.info("Send http: {}, params: {}, result: " + ret, urlStr, params == null ? bodyStr : params);
-                }
-            } catch (Exception ex) {
-                log.error("Http error. " + urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret, ex);
+            }
+            catch (Exception e) {
+                ex = e;
             } finally {
                 if (conn != null) conn.disconnect();
             }
+            if (debug) {
+                String logMsg = "Send http: " +urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret;
+                if (ex == null) {
+                    log.info(logMsg);
+                } else {
+                    log.error(logMsg, ex);
+                }
+            }
+            if (ex != null) throw new RuntimeException(ex);
             return ret;
         }
     }

@@ -189,6 +189,13 @@ queue("save")
         me.suspend(Duration.ofSeconds(180));
     };
 ```
+
+## 汇聚流: ConvergeInputStream
+> 顺序汇聚 多个流到一个流 直到 结束
+* 流1(InputStream)    |
+* 流2(InputStream)    | ==> 汇聚流 ==> 读取
+* 流3(InputStream)    |
+
 ## 延迟对象 LazySupplier
 > 封装是一个延迟计算值(只计算一次)
 ```java
@@ -264,7 +271,7 @@ Utils.toMapper(bean).showClassProp().build()
 ## 应用例子
 [AppTest](https://gitee.com/xnat/app/blob/master/src/test/main/java/AppTest.java)
 
-[rule](https://gitee.com/xnat/rule)
+[rule](https://gitee.com/xnat/rule)d
 
 
 # 参与贡献
