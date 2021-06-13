@@ -17,7 +17,7 @@
         <dependency>
             <groupId>cn.xnatural.enet</groupId>
             <artifactId>enet-event</artifactId>
-            <version>0.0.18</version>
+            <version>0.0.19</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -116,7 +116,7 @@
     <repositories>
         <repository>
             <id>aliyun</id>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <url>https://maven.aliyun.com/repository/central</url>
         </repository>
     </repositories>
 
