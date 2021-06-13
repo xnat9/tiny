@@ -186,7 +186,10 @@ queue("save").offer(() -> {
 queue("save")
     .errorHandle {ex, me ->
         // 发生错误时, 让对列暂停执行(不影响新任务入对)
+        // 1. 暂停一段时间
         me.suspend(Duration.ofSeconds(180));
+        // 2. 条件暂停
+        // me.suspend(queue -> true);
     };
 ```
 
@@ -251,21 +254,23 @@ Utils.http().post("http://xnatural.cn:9090/test/string")
 ## Map构建器
 ```java
 // 把bean转换成map
-Utils.toMapper(bean).build()
+Utils.toMapper(bean).build();
 // 添加属性
-Utils.toMapper(bean).add(属性名, 属性值).build()
+Utils.toMapper(bean).add("属性名", 属性值).build();
 // 忽略属性
-Utils.toMapper(bean).ignore(属性名).build()
+Utils.toMapper(bean).ignore("属性名").build();
 // 转换属性
-Utils.toMapper(bean).addConverter(属性名, Function<原属性值, 转换后的属性值>).build()
+Utils.toMapper(bean).addConverter("属性名", Function<原属性值, 转换后的属性值>).build();
+// 衍生属性
+Utils.toMapper(bean).addConverter("属性名", "新属性", Function<原属性值, 转换后的属性值>).build();
 // 忽略null属性
-Utils.toMapper(bean).ignoreNull().build()
+Utils.toMapper(bean).ignoreNull().build();
 // 属性更名
-Utils.toMapper(bean).aliasProp(原属性名, 新属性名).build()
+Utils.toMapper(bean).aliasProp(原属性名, 新属性名).build();
 // 排序map
-Utils.toMapper(bean).sort().build()
+Utils.toMapper(bean).sort().build();
 // 显示class属性
-Utils.toMapper(bean).showClassProp().build()
+Utils.toMapper(bean).showClassProp().build();
 ```
 
 ## 应用例子

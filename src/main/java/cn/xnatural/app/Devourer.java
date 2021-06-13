@@ -9,6 +9,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 /**
  * 对列执行器
@@ -53,9 +54,9 @@ public class Devourer {
      */
     protected BiConsumer<Throwable, Devourer> errorHandler;
     /**
-     * 暂停器
+     * 暂停执行条件
      */
-    protected Pause pause;
+    protected Predicate<Devourer> pauseCondition;
 
 
     /**
@@ -73,7 +74,7 @@ public class Devourer {
     public Devourer() {
         this.key = Devourer.class.getSimpleName() + "@" + Integer.toHexString(hashCode());
         this.exec = Executors.newFixedThreadPool(4, new ThreadFactory() {
-            AtomicInteger i = new AtomicInteger(0);
+            final AtomicInteger i = new AtomicInteger(0);
             @Override
             public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
         });
@@ -97,9 +98,9 @@ public class Devourer {
      * 不断的从 {@link #waiting} 对列中取出执行
      */
     protected void trigger() {
-        if (pause != null) { // 是否设置了暂停
-            if (pause.isTimeout()) pause = null;
-            else return; // 暂停时间未到
+        if (pauseCondition != null) { // 是否设置了暂停
+            if (pauseCondition.test(this)) return;
+            else pauseCondition = null;
         }
         if (waiting.isEmpty()) return;
         // TODO 会有 cas aba 问题?
@@ -176,18 +177,39 @@ public class Devourer {
 
     /**
      * 暂停一段时间
-     * @NOTE 继续执行条件: 必须有新的任务入对, 或者手动调用 {@link #resume()}
+     * NOTE 继续执行条件: 必须有新的任务入对, 或者手动调用 {@link #resume()}
      * @param duration 一段时间
      * @return {@link Devourer}
      */
-    public Devourer suspend(Duration duration) { pause = new Pause(duration); return this; }
+    public Devourer suspend(Duration duration) {
+        pauseCondition = new Predicate<Devourer>() {
+            final Pause pause = new Pause(duration);
+            @Override
+            public boolean test(Devourer devourer) {
+                return !pause.isTimeout();
+            }
+        };
+        return this;
+    }
+
+
+    /**
+     * 设置暂停条件
+     * 使用 {@link #resume()} 恢复
+     * @param pauseCondition 暂停条件
+     * @return {@link Devourer}
+     */
+    public Devourer suspend(Predicate<Devourer> pauseCondition) {
+        this.pauseCondition = pauseCondition;
+        return this;
+    }
 
 
     /**
      * 手动恢复执行
      * @return {@link Devourer}
      */
-    public Devourer resume() { pause = null; return this; }
+    public Devourer resume() { pauseCondition = null; trigger(); return this; }
 
 
     /**
@@ -196,7 +218,7 @@ public class Devourer {
      */
     public boolean isSuspended() {
         try {
-            if (pause != null && !pause.isTimeout()) return true;
+            if (pauseCondition != null && pauseCondition.test(this)) return true;
         } catch (NullPointerException npt) { /** trigger方法并发有可能把pause置null **/ }
         return false;
     }
@@ -217,6 +239,6 @@ public class Devourer {
 
     @Override
     public String toString() {
-        return key + "{parallel: " + parallel() + ", waitingCount: " + getWaitingCount() + "}";
+        return key + "{parallel: " + parallel() + ", waitingCount: " + getWaitingCount() + ", isSuspended: "+ isSuspended() +"}";
     }
 }

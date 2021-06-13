@@ -46,7 +46,7 @@ public class DevourerTest {
             devourer.suspend(Duration.ofSeconds(10));
         });
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 50; i++) {
             int finalI = i;
             Thread.sleep(100);
             devourer.offer(() -> {
@@ -54,10 +54,7 @@ public class DevourerTest {
             });
             log.info("added" + i);
         }
-        Thread.sleep(10 * 1000);
-        devourer.offer(() -> {
-            log.info("执行 最后一个");
-        });
+        devourer.resume();
         Thread.sleep(60 * 1000);
     }
 }
