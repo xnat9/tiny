@@ -78,6 +78,10 @@ public class ConvergeInputStream extends InputStream {
     }
 
 
+    @Override
+    public int available() throws IOException { return (int) (length - readCount); }
+
+
     /**
      * 是否计取完成
      */
