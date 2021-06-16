@@ -60,7 +60,17 @@ public class ConvergeInputStream extends InputStream {
             return read();
         }
         readCount++;
-        return 0;
+        return result;
+    }
+
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        if (currentStream != null && currentStream.available() >= len) {
+            readCount += len;
+            return currentStream.read(b, off, len);
+        }
+        return super.read(b, off, len);
     }
 
 
