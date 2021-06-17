@@ -8,13 +8,11 @@ import cn.xnatural.sched.Sched;
 
 import javax.inject.Named;
 import java.time.Duration;
-import java.util.Date;
-import java.util.function.Supplier;
 
 public class AppTest {
 
     public static void main(String[] args) throws Exception {
-        AppContext app = new AppContext();
+        final AppContext app = new AppContext();
         app.addSource(new ServerTpl("server1") {
             @EL(name = "sys.starting")
             void start() {
@@ -42,9 +40,7 @@ public class AppTest {
                 }).start();
             }
             @EL(name = "sys.stop")
-            void stop() {
-                if (server != null) server.stop();
-            }
+            void stop() { if (server != null) server.stop(); }
         });
         app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
             Repo repo;
@@ -56,7 +52,7 @@ public class AppTest {
                 ep.fire(name + ".started");
             }
 
-            @EL(name = "sys.stopping", async = true)
+            @EL(name = "sys.stopping", async = true, order = 2f)
             void stop() { if (repo != null) repo.close(); }
         });
         app.addSource(new ServerTpl("sched") { // 定时任务
@@ -69,13 +65,7 @@ public class AppTest {
             }
             @EL(name = "sched.after")
             void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
-            @EL(name = "sched.time")
-            void time(Date time, Runnable fn) {sched.time(time, fn);}
-            @EL(name = "sched.cron")
-            void cron(String cron, Runnable fn) {sched.cron(cron, fn);}
-            @EL(name = "sched.dyn")
-            void dyn(Supplier<Date> dateSupplier, Runnable fn) {sched.dyn(dateSupplier, fn);}
-            @EL(name = "sys.stopping", async = true)
+
             void stop() { if (sched != null) sched.stop(); }
         });
         app.addSource(new ServerTpl("remoter") {

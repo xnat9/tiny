@@ -193,6 +193,22 @@ queue("save")
     };
 ```
 
+## 简单缓存 CacheSrv
+```java
+// 添加缓存服务
+app.addSource(new CacheSrv());
+```
+```java
+// 1. 设置缓存
+bean(CacheSrv).set("缓存key", "缓存值", Duration.ofMinutes(30));
+// 2. 获取缓存
+bean(CacheSrv).get("缓存key");
+// 3. 过期设置
+bean(CacheSrv).expire("缓存key", Duration.ofMinutes(30));
+// 4. 手动删除
+bean(CacheSrv).remove("缓存key");
+```
+
 ## 汇聚流: ConvergeInputStream
 > 顺序汇聚 多个流到一个流 直到 结束
 * 流1(InputStream)    |

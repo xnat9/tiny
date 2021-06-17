@@ -469,11 +469,11 @@ public class AppContext {
             @Override
             public EP addListenerSource(Object s) { ep().addListenerSource(s); return this; }
             @Override
-            public EP listen(String eName, Runnable fn, boolean async, float order) { return ep().listen(eName, fn, async, order); }
+            public EP listen(String eName, Runnable fn, boolean async, float order, Integer limit) { return ep().listen(eName, fn, async, order, limit); }
             @Override
-            public EP listen(String eName, Function fn, boolean async, float order) { return ep().listen(eName, fn, async, order); }
+            public EP listen(String eName, Function fn, boolean async, float order, Integer limit) { return ep().listen(eName, fn, async, order, limit); }
             @Override
-            public EP listen(String eName, BiFunction fn, boolean async, float order) { return ep().listen(eName, fn, async, order); }
+            public EP listen(String eName, BiFunction fn, boolean async, float order, Integer limit) { return ep().listen(eName, fn, async, order,limit); }
             @Override
             public boolean exist(String... eNames) { return ep().exist(eNames); }
             @Override

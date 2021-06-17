@@ -54,7 +54,7 @@ public class ConvergeInputStream extends InputStream {
             }
         }
         if (currentStream == null) currentStream = streamQueue.poll();
-        int result =  currentStream.read();
+        int result = currentStream.read();
         if (result == -1) {
             currentStream = null;
             return read();
