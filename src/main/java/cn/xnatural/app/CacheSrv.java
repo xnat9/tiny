@@ -26,6 +26,11 @@ public class CacheSrv extends ServerTpl {
     });
 
 
+    public CacheSrv(String name) { super(name); }
+
+    public CacheSrv() { super(CacheSrv.class.getSimpleName()); }
+
+
     /**
      * 设置缓存
      * 取默认过期时间 10分钟
