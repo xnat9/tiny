@@ -66,7 +66,7 @@ public class AppContext {
      * NOTE: 如果线程池在不停的创建线程, 有可能是因为 提交的 Runnable 的异常没有被处理.
      * see:  {@link java.util.concurrent.ThreadPoolExecutor#runWorker(java.util.concurrent.ThreadPoolExecutor.Worker)} 这里面当有异常抛出时 1128行代码 {@link java.util.concurrent.ThreadPoolExecutor#processWorkerExit(java.util.concurrent.ThreadPoolExecutor.Worker, boolean)}
      */
-    protected final LazySupplier<ThreadPoolExecutor> _exec = new LazySupplier<>(() -> {
+    protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ... ");
         Integer maxSize = getAttr("sys.exec.maximumPoolSize", Integer.class, 32);
         ThreadPoolExecutor exec = new ThreadPoolExecutor(
@@ -128,7 +128,7 @@ public class AppContext {
     /**
      * 初始化 事件中心
      */
-    protected final LazySupplier<EP> _ep = new LazySupplier<>(() -> {
+    protected final Lazier<EP> _ep = new Lazier<>(() -> {
         log.debug("init ep ...");
         EP ep = new EP(exec(), LoggerFactory.getLogger(EP.class)) {
             @Override
@@ -159,7 +159,7 @@ public class AppContext {
     /**
      * 环境属性配置.只支持properties文件, 支持${}属性替换
      */
-    private final LazySupplier<Map<String, Object>> _env = new LazySupplier<>(() -> {
+    private final Lazier<Map<String, Object>> _env = new Lazier<>(() -> {
         Map<String, Object> result = new ConcurrentHashMap<>(); // 结果属性集
         System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
         String configdir = (String) result.get("configdir"); // 配置文件的目录. 默认classpath路径
@@ -167,12 +167,8 @@ public class AppContext {
         String profile = (String) result.get("profile");
         List<String> cfgNames = new LinkedList<>();
         cfgNames.add(configname + ".properties");
-//        cfgNames.add(configname + ".yml");
-//        cfgNames.add(configname + ".yaml");
         if (profile != null && !profile.trim().isEmpty()) {
             cfgNames.add(configname + "-" + profile.trim() + ".properties");
-//            cfgNames.add(configname + "-" + profile.trim() + ".yml");
-//            cfgNames.add(configname + "-" + profile.trim() + ".yaml");
         }
         for (String name : cfgNames) {
             try (InputStream is = (configdir == null || configdir.isEmpty()) ? getClass().getClassLoader().getResourceAsStream(name) : new FileInputStream(new File(configdir, name))) {
@@ -526,7 +522,7 @@ public class AppContext {
     /**
      * 系统名字. 用于多个系统启动区别
      */
-    protected final LazySupplier<String> _name = new LazySupplier<>(() -> getAttr("sys.name", String.class, "app"));
+    protected final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "app"));
     public String name() { return _name.get(); }
 
 
@@ -534,7 +530,7 @@ public class AppContext {
      * 实例Id
      * NOTE: 保证唯一
      */
-    protected final LazySupplier<String> _id = new LazySupplier<>(() -> getAttr("sys.id", String.class, Utils.random(10, name() + "_", null)));
+    protected final Lazier<String> _id = new Lazier<>(() -> getAttr("sys.id", String.class, Utils.random(10, name() + "_", null)));
     public String id() { return _id.get(); }
 
 

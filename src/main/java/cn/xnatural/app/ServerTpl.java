@@ -31,8 +31,8 @@ public class ServerTpl {
      */
     @Inject
     protected       EP     ep;
-    private final LazySupplier<AppContext> _app = new LazySupplier<>(() -> bean(AppContext.class));
-    private final LazySupplier<ExecutorService> _exec = new LazySupplier<>(() -> bean(ExecutorService.class));
+    private final Lazier<AppContext> _app = new Lazier<>(() -> bean(AppContext.class));
+    private final Lazier<ExecutorService> _exec = new Lazier<>(() -> bean(ExecutorService.class));
     //private final LazySupplier<Map<String, Object>> _config = new LazySupplier<>(() -> new HashMap<>());
 
 

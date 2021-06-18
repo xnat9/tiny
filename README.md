@@ -215,18 +215,18 @@ bean(CacheSrv).remove("缓存key");
 * 流2(InputStream)    | ==> 汇聚流 ==> 读取
 * 流3(InputStream)    |
 
-## 延迟对象 LazySupplier
+## 延迟对象 Lazier
 > 封装是一个延迟计算值(只计算一次)
 ```java
-final LazySupplier<String> _id = new LazySupplier<>(() -> {
+final Lazier<String> _id = new Lazier<>(() -> {
     String id = getHeader("X-Request-ID");
     if (id != null && !id.isEmpty()) return id;
     return UUID.randomUUID().toString().replace("-", "");
 });
 ```
-延迟获取属性值
+> 延迟获取属性值
 ```java
-final LazySupplier<String> _name = new LazySupplier<>(() -> getAttr("sys.name", String.class, "app"));
+final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "app"));
 ```
 
 

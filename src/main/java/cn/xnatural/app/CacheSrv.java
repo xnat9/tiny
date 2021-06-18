@@ -11,12 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * 简单内存缓存服务
  */
 public class CacheSrv extends ServerTpl {
-    protected final LazySupplier<Integer> _limit = new LazySupplier<>(() -> getInteger("itemLimit", 1000));
+    protected final Lazier<Integer> _limit = new Lazier<>(() -> getInteger("itemLimit", 1000));
 
     /**
      * 数据存放
      */
-    protected final LazySupplier<Map<String, Record>> _data = new LazySupplier<>(() -> new ConcurrentHashMap<String, Record>( _limit.get() / 2) {
+    protected final Lazier<Map<String, Record>> _data = new Lazier<>(() -> new ConcurrentHashMap<String, Record>( _limit.get() / 2) {
         @Override
         public Record remove(Object key) {
             Record v = super.remove(key);

@@ -6,13 +6,13 @@ import java.util.function.Supplier;
  * Groovy @Lazy 实现
  * @param <T>
  */
-public class LazySupplier<T> implements Supplier<T> {
+public class Lazier<T> implements Supplier<T> {
     private final Supplier<T> supplier;
     // 只执行一次
     private boolean       once = false;
     private T result;
 
-    public LazySupplier(Supplier<T> supplier) {
+    public Lazier(Supplier<T> supplier) {
         if (supplier == null) throw new NullPointerException("Param supplier is null");
         this.supplier = supplier;
     }
