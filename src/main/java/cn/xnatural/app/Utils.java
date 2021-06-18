@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 常用工具集
@@ -222,6 +223,8 @@ public class Utils {
         protected String                      method;
         protected String                      bodyStr;
         protected Map<String, Object>         params;
+        // 文件流:(属性名, 文件名, 文件内容)
+        protected Map<String, Map<String, Object>> fileStreams;
         protected Map<String, Object>         cookies;
         protected Map<String, String>         headers;
         protected int                         connectTimeout = 5000;
@@ -253,15 +256,33 @@ public class Utils {
         public Httper param(String name, Object value) {
             if (params == null) params = new LinkedHashMap<>();
             params.put(name, value);
+            if (value instanceof File) { contentType = "multipart/form-data"; }
+            return this;
+        }
+
+        /**
+         * 添加文件流
+         * @param pName 属性名
+         * @param filename 文件名
+         * @param fileStream 文件流
+         */
+        public Httper fileStream(String pName, String filename, InputStream fileStream) {
+            if (pName == null) throw new NullPointerException("pName == null");
+            if (fileStream == null) throw new NullPointerException("fileStream == null");
+            if (filename == null) throw new NullPointerException("filename == null");
+            if (fileStreams == null) fileStreams = new LinkedHashMap<>();
+            contentType = "multipart/form-data";
+            Map<String, Object> entry = fileStreams.computeIfAbsent(pName, s -> new HashMap<>(2));
+            entry.put("filename", filename); entry.put("fileStream", fileStream);
             return this;
         }
         public Httper header(String name, String value) {
-            if (headers == null) headers = new HashMap<>(7);
+            if (headers == null) headers = new LinkedHashMap<>(7);
             headers.put(name, value);
             return this;
         }
         public Httper cookie(String name, Object value) {
-            if (cookies == null) cookies = new HashMap<>(7);
+            if (cookies == null) cookies = new LinkedHashMap<>(7);
             cookies.put(name, value);
             return this;
         }
@@ -319,7 +340,7 @@ public class Utils {
                 if ("POST".equals(method)) {
                     conn.setUseCaches(false);
                     conn.setDoOutput(true);
-                    if ("multipart/form-data".equals(contentType) || (params != null && params.entrySet().stream().anyMatch(entry -> entry.getValue() instanceof File))) {
+                    if ("multipart/form-data".equalsIgnoreCase(contentType)) {
                         isMulti = true;
                         boundary = "----CustomFormBoundary" + UUID.randomUUID().toString().replace("-", "");
                         contentType = "multipart/form-data;boundary=" + boundary;
@@ -346,27 +367,45 @@ public class Utils {
                     if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && bodyStr != null) {
                         os.write(bodyStr.getBytes(charset));
                         os.flush(); os.close();
-                    } else if (isMulti && (params != null && !params.isEmpty())) {
+                    } else if (isMulti) {
                         String end = "\r\n";
                         String twoHyphens = "--";
-                        for (Map.Entry<String, Object> entry : params.entrySet()) {
-                            os.writeBytes(twoHyphens + boundary + end);
-                            if (entry.getValue() instanceof File) {
-                                String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +((File) entry.getValue()).getName()+ "\"" + end;
+                        if (params != null) {
+                            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                                os.writeBytes(twoHyphens + boundary + end);
+                                if (entry.getValue() instanceof File) {
+                                    String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +((File) entry.getValue()).getName()+ "\"" + end;
+                                    os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
+                                    os.writeBytes(end);
+                                    try (FileInputStream is = new FileInputStream((File) entry.getValue())) { // copy
+                                        byte[] bs = new byte[Math.min(is.available(), 4028)];
+                                        int n;
+                                        while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
+                                    }
+                                } else {
+                                    os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes(charset));
+                                    os.writeBytes(end);
+                                    os.write(entry.getValue() == null ? "".getBytes(charset) : entry.getValue().toString().getBytes(charset));
+                                }
+                                os.writeBytes(end);
+                            }
+                        }
+                        if (fileStreams != null) {
+                            for (Map.Entry<String, Map<String, Object>> entry : fileStreams.entrySet()) {
+                                os.writeBytes(twoHyphens + boundary + end);
+                                Map<String, Object> fileInfo = entry.getValue();
+                                String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +fileInfo.get("filename")+ "\"" + end;
                                 os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
                                 os.writeBytes(end);
-                                try (FileInputStream is = new FileInputStream((File) entry.getValue())) { // copy
-                                    byte[] bs = new byte[4028];
+                                try (InputStream is = (InputStream) fileInfo.get("fileStream")) { // copy
+                                    byte[] bs = new byte[Math.min(is.available(), 4028)];
                                     int n;
                                     while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
                                 }
-                            } else {
-                                os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes(charset));
                                 os.writeBytes(end);
-                                os.write(entry.getValue() == null ? "".getBytes(charset) : entry.getValue().toString().getBytes(charset));
                             }
-                            os.writeBytes(end);
                         }
+
                         os.writeBytes(twoHyphens + boundary + twoHyphens + end);
                         os.flush(); os.close();
                     } else if ((params != null && !params.isEmpty())) {
@@ -432,17 +471,18 @@ public class Utils {
      */
     public static String buildUrl(String urlStr, Map<String, Object> params) {
         if (params == null || params.isEmpty()) return urlStr;
-        try {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                String v = entry.getValue() == null ? "" : URLEncoder.encode(entry.getValue().toString(), "utf-8");
-                if (urlStr.endsWith("?")) urlStr += (entry.getKey() + "=" + v + "&");
-                else if (urlStr.endsWith("&")) urlStr += (entry.getKey() + "=" + v + "&");
-                else if (urlStr.contains("?")) urlStr += ("&" + entry.getKey() + "=" + v + "&");
-                else urlStr += ("?" + entry.getKey() + "=" + v + "&");
-            }
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        String queryStr = params.entrySet().stream()
+                .map(e -> {
+                    try {
+                        return e.getKey() + "=" + URLEncoder.encode(e.getValue().toString(), "utf-8");
+                    } catch (UnsupportedEncodingException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                })
+                .collect(Collectors.joining("&"));
+        if (urlStr.endsWith("?") || urlStr.endsWith("&")) urlStr += queryStr;
+        else if (urlStr.contains("?")) urlStr += "&" + queryStr;
+        else urlStr += "?" + queryStr;
         return urlStr;
     }
 

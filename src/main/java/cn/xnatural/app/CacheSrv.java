@@ -1,5 +1,7 @@
 package cn.xnatural.app;
 
+import cn.xnatural.enet.event.EL;
+
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,6 +43,7 @@ public class CacheSrv extends ServerTpl {
      * @param value 缓存值
      * @param expire 过期时间
      */
+    @EL(name = "${name}.set")
     public CacheSrv set(String key, Object value, Duration expire) {
         log.trace("Set cache. key: {}, value: {}, expire: {}", key, value, expire);
         _data.get().put(key, new Record(expire == null ? null : expire.toMillis(), value));
@@ -77,8 +80,9 @@ public class CacheSrv extends ServerTpl {
      * 重新更新过期时间
      * @param key 缓存key
      * @param expire 过期时间
+     * @return 缓存值
      */
-    public CacheSrv expire(String key, Duration expire) {
+    public Object expire(String key, Duration expire) {
         Record record = _data.get().get(key);
         if (record != null) {
             if (expire != null) {
@@ -89,16 +93,18 @@ public class CacheSrv extends ServerTpl {
                 log.debug("Removed cache: {}", key);
                 _data.get().remove(key);
             }
+            return record.value;
         }
-        return this;
+        return null;
     }
 
 
     /**
      * 移除缓存
      * @param key 缓存key
+     * @return 缓存值
      */
-    public CacheSrv remove(String key) { return expire(key, null); }
+    public Object remove(String key) { return expire(key, null); }
 
 
     /**
@@ -106,6 +112,7 @@ public class CacheSrv extends ServerTpl {
      * @param key 缓存key
      * @return 缓存值
      */
+    @EL(name = "${name}.get")
     public Object get(String key) {
         Record record = _data.get().get(key);
         if (record == null) return null;

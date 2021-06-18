@@ -11,5 +11,6 @@ public class CacheTest {
         CacheSrv cache = app.bean(CacheSrv.class, null);
         cache.set("c1", "aaa");
         System.out.println(cache.get("c1"));
+        System.out.println(app.ep().fire("cacheSrv.get", "c1"));
     }
 }

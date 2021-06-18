@@ -249,10 +249,15 @@ Utils.http().post("http://xnatural.cn:9090/test/form")
         .debug().execute();
 ```
 ```java
-// post 文件
+// post 上传文件
 Utils.http().post("http://xnatural.cn:9090/test/upload")
     .param("file", new File("d:/tmp/1.txt"))
     .debug().execute();
+
+// post 上传文件流. 一般上传大文件 可配合 汇聚流 使用
+Utils.http().post("http://xnatural.cn:9090/test/upload")
+  .fileStream("file", "test.md", new FileInputStream("d:/tmp/test.md"))
+  .debug().execute();
 ```
 ```java
 // post json
