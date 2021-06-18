@@ -234,7 +234,11 @@ final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class
 ```java
 // get
 Utils.http().get("http://xnatural.cn:9090/test/cus?p2=2")
-        .param("p1", 1)
+        .header("test", "test") // 自定义header
+        .cookie("sessionId", "xx") // 自定义 cookie
+        .connectTimeout(5000) // 设置连接超时 5秒
+        .readTimeout(15000) // 设置读结果超时 15秒
+        .param("p1", 1) // 添加参数
         .debug().execute();
 ```
 ```java
@@ -295,9 +299,9 @@ Utils.toMapper(bean).showClassProp().build();
 ```
 
 ## 应用例子
-[AppTest](https://gitee.com/xnat/app/blob/master/src/test/main/java/AppTest.java)
+[Demo](https://gitee.com/xnat/appdemo)
 
-[rule](https://gitee.com/xnat/rule)d
+[rule](https://gitee.com/xnat/rule)
 
 
 # 参与贡献

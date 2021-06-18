@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 public class Lazier<T> implements Supplier<T> {
     private final Supplier<T> supplier;
     // 只执行一次
-    private boolean       once = false;
+    private boolean once = false;
     private T result;
 
     public Lazier(Supplier<T> supplier) {
@@ -38,5 +38,10 @@ public class Lazier<T> implements Supplier<T> {
             }
         }
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return result == null ? null : result.toString();
     }
 }
