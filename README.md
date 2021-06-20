@@ -8,14 +8,6 @@
 
 ![Image text](https://gitee.com/xnat/tmp/raw/master/img/app-desc.png)
 
-
-# 系统事件
-+ sys.inited:  应用始化完成(环境配置, 事件中心, 系统线程池)
-+ sys.starting: 通知所有服务启动. 一般为ServerTpl
-+ sys.started: 应用启动完成
-+ sys.stopping: 应用停止事件(kill pid)
-
-
 # 安装教程
 ```xml
 <dependency>
@@ -24,6 +16,12 @@
     <version>1.0.4</version>
 </dependency>
 ```
+
+# 系统事件
++ sys.inited:  应用始化完成(环境配置, 事件中心, 系统线程池)
++ sys.starting: 通知所有服务启动. 一般为ServerTpl
++ sys.started: 应用启动完成
++ sys.stopping: 应用停止事件(kill pid)
 
 # 可搭配其它服务
 [http](https://gitee.com/xnat/http), [jpa](https://gitee.com/xnat/jpa),
@@ -124,6 +122,16 @@ void sysInited() {
     }
 }
 ```
+
+## 系统心跳
+> 需要用 [sched](https://gitee.com/xnat/sched) 添加监听
+```java
+@EL(name = "sched.after")
+void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
+```
+> 每隔一段时间触发一次心跳, 1~4分钟随机心跳
+> + 配置(sys.heartbeat.minInterval) 控制心跳最小时间间隔
+> + 配置(sys.heartbeat.randomInterval) 控制心跳最大时间间隔
 
 ## bean注入
 ```java
