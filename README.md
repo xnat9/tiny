@@ -1,12 +1,54 @@
 # 介绍
-轻量级java应用框架模板. 基于 [enet](https://gitee.com/xnat/enet)
+轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet)
 
 > 系统只一个公用线程池: 所有的执行都被抽象成Runnable加入到公用线程池中执行
 
 > 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
 
+<!--
+@startuml
+skinparam ConditionEndStyle hline
+split
+   -[hidden]->
+   :服务 1;
+split again
+   -[hidden]->
+   :服务 2;
+split again
+   -[hidden]->
+   :服务 n;
+end split
 
-![Image text](https://gitee.com/xnat/tmp/raw/master/img/app-desc.png)
+if (任务(Runnable)) then (对列执行器/吞噬器)
+  fork
+    -> 并发 ;
+    :Devourer 1;
+    :one-by-one;
+    -> 提交 ;
+  fork again
+    -> 并发 ;
+    :Devourer 2;
+    :two-by-two;
+    -> 提交 ;
+  fork again
+    -> 并发 ;
+    :Devourer n;
+    :n-by-n;
+    -> 提交 ;
+  end fork
+else
+  fork
+    :任务 1;
+  fork again
+    :任务 2;
+  fork again
+    :任务 n;
+  end fork
+endif
+:线程池;
+@enduml
+-->
+![Image text](http://www.plantuml.com/plantuml/png/fPBFIiD04CRl-nHpR0z1scCMIa5z0JsAXoqxDKktioNPA7q3_oYj9oc8M13iGH0lGjk3BzDDVGmt9gAY1C7JPBxloszsbcqdLiGsxMkMz1GDH2pwi6b8AgiCRPFSjKED46b5o9A1LfO1GB0NAIcHzeDMteRPzOKxdKA35n4G1q9HHR3vro1nXYIX6CnK5sghvT8RjPsKI7GqrkjW8oIekSUvExxAJkvVf-TkCjjmunitUV1VTS_hchYNOo5eWPi_kz4byFS-tC93ayOOGwCK367G6GQ-y8y_ij5ujRW3NeBAGrVZcgLWZqoEy-LVE2e5oc7q6mf95ckYJl3hoc5nOz3uCV3JQrPuz9rEKdKP2zUBb_NiB7kwvQpjDVz-tW00)
 
 # 安装教程
 ```xml

@@ -41,7 +41,5 @@ public class Lazier<T> implements Supplier<T> {
     }
 
     @Override
-    public String toString() {
-        return result == null ? null : result.toString();
-    }
+    public String toString() { return result == null ? null : result.toString(); }
 }
