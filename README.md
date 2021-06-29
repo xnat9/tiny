@@ -82,6 +82,127 @@ app.addSource(new TestService()); // 添加自定义服务
 app.start(); // 应用启动
 ```
 
+<!--
+@startuml
+class AppContext {
+  #EP ep
+  #Map<String, Object> sourceMap
+  #Map<String, Devourer> queues
+
+  +addSource(Object source)
+  +start()
+}
+
+note left of AppContext::ep
+  事件中心
+end note
+
+note right of AppContext::sourceMap
+  所有被添加的Server
+end note
+
+note left of AppContext::queues
+  所有被Server#queue 方添加的
+  对列执行器
+end note
+
+note right of AppContext::addSource
+  添加服务
+end note
+
+note left of AppContext::start
+1. 触发事件 sys.inited 系统配置加载完成, 线程池, 事件中心初始化已完成
+2. 触发事件 sys.starting 调用所有服务所包含@EL(name = "sys.starting") 的监听器方法
+3. sys.starting 所有监听执行完成后, 继续触发 sys.started 事件
+end note
+
+class EP {
+  #{field} Map<String, Listener> lsMap;
+  +{method} fire(String 事件名, Object...参数);
+}
+
+note left of EP::lsMap
+  所有监听器映射: 关联@EL方法
+end note
+
+note right of EP::fire
+  事件触发
+end note
+
+AppContext <|-- EP
+EP <|-- Server1 : 收集监听器
+EP <|-- Server2 : 收集监听器
+EP <|-- Server3 : 收集监听器
+
+
+class Server1 {
+  ...启动监听...
+  @EL(name = "sys.starting")
+  void start()
+  
+  ...停止监听...
+  @EL(name = "sys.stopping")
+  void stop()
+
+  ...其它监听...
+  @EL(name = "xx")
+  {method} void xx()
+
+  ...基本功能...
+
+  {method} bean(Class bean类型, String bean名)
+
+  {method} queue(String 对列名, Runnabel 任务)
+
+  {method} async(Runnable 异步任务)
+
+  {method} get[Integer, Long, Boolean, Str](String 属性名)
+}
+
+class Server2  {
+  ...启动监听...
+  @EL(name = "sys.starting")
+  void start()
+
+  ...其它监听...
+  @EL(name = "oo")
+  {method} String oo()
+
+  ...基本功能...
+
+  {method} bean(Class bean类型, String bean名)
+
+  {method} queue(String 对列名, Runnabel 任务)
+
+  {method} async(Runnable 异步任务)
+
+  {method} get[Integer, Long, Boolean, Str](String 属性名)
+}
+
+class Server3  {  
+  ...停止监听...
+  @EL(name = "sys.stopping")
+  void stop()
+
+  ...其它监听...
+  @EL(name = "aa")
+  {method} aa()
+
+  ...基本功能...
+
+  {method} bean(Class bean类型, String bean名)
+
+  {method} queue(String 对列名, Runnabel 任务)
+
+  {method} async(Runnable 异步任务)
+
+  {method} get[Integer, Long, Boolean, Str](String 属性名)
+}
+@enduml
+-->
+
+![Image text](http://www.plantuml.com/plantuml/png/vLJDJjjE7BpxANw2Iw9_Y0JS0dz4ItEeH5LKZbKF9ju4LuutjHqKH960a0gIK884z8EK3wGsaI1y50aARiJBPDVXBRhs6kDGe4YLUk6stfsPdPsTTRzkY9gHJYf2J15r7HwbKWDODL36W0a1e3qw12Xb3vw9gTvXGvFLH0YUZxn6CQCFT9pMOeYjN0SyGMDi2Mbzy2QDqaWN6E0_KPA67KA0yrrwq5vpN0I2mgGWgDX0eA2u0JZkinE9E3uQPuM6UTpuKIFdMG6f4jXmbwJ9YT7VM7wFT7wAbkURsplqn2JvJUlpx33Inf3c2TsnEp-8NuHpsvq5eAkddYW3aVrJClU1pbUQMqNogNelfru-ZC-rQ7c1vBVkuyx9J-WCGxFoZImkyPH07zV3iYeRI0BhoBJCZOlSWbNVOyhDUfti5UbSAGJMsRbLBT33pL1Bk6Jk2waKI76Ld7pdKA7h1dbdOtRdq3p8MijL7WxtpSQac2EbdVxeO40LamZ-XpO_foq8B2rhROcKTbb8TeH7Aq9tk5MOIt8K3vJR8QNtpBnPiSmQTtL5Gv9x55zqlDxH8LxhYRYC56aI_AKTb7K3gNPf5PtDzzYzd4WYOnGpO5pMK80ZNMrIMhXy2U5mc2pEq9M3OC_r1hCT8n55z_Vlwi0VDyd1R0H8xgWvlSnIuWdSKXOkPVlmdW4_jm_lUxszRpiw64E83l4XRsidH80k7r-ilVDSN4Dq_H7HVGF2pTVRnGxPJgMqJ_9L3cEVRFBsBh35CInBSFah070rfikqjdst1awbMZNO39Dm1NB7P2zxcq0cuz2yYtRucSmLU-ECbdT9VgEPhTjiFtO4YMfWm3wuCxGEJR9U206lYJF5IXBqK_Z_q2sI-vTmYlGYhQhY25AWOPhixRIIH7rSZGKuH450VixGsjURW0bal7og6YY1DDPdRBVwCSOAC-AuUkLjVBXEfogEkSdMg-k2lx-x-mMFSMlmhZMC7shqtKpj7vLU55kp5yK757e_KgLqKla5)
+
 ## 添加http服务
 > web.hp=:8080
 ```java
@@ -259,12 +380,6 @@ bean(CacheSrv).expire("缓存key", Duration.ofMinutes(30));
 bean(CacheSrv).remove("缓存key");
 ```
 
-## 汇聚流: ConvergeInputStream
-> 顺序汇聚 多个流到一个流 直到 结束
-* 流1(InputStream)    |
-* 流2(InputStream)    | ==> 汇聚流 ==> 读取
-* 流3(InputStream)    |
-
 ## 延迟对象 Lazier
 > 封装是一个延迟计算值(只计算一次)
 ```java
@@ -353,6 +468,8 @@ Utils.toMapper(bean).showClassProp().build();
 
 [rule](https://gitee.com/xnat/rule)
 
+# TODO
+* CacheSrv accessTime
 
 # 参与贡献
 
