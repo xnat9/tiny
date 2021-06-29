@@ -39,7 +39,7 @@
         <dependency>
             <groupId>cn.xnatural.http</groupId>
             <artifactId>http</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
