@@ -33,7 +33,7 @@ public class CacheSrv extends ServerTpl {
 
     /**
      * 设置缓存
-     * 取默认过期时间 10分钟
+     * 取默认过期时间 30 分钟
      * @param key 缓存key
      * @param value 缓存值
      */
@@ -87,6 +87,7 @@ public class CacheSrv extends ServerTpl {
      * @param expire 过期时间
      * @return 缓存值
      */
+    @EL(name = "${name}.expire")
     public Object expire(String key, Duration expire) {
         Record record = _data.get().get(key);
         if (record != null) {
@@ -109,6 +110,7 @@ public class CacheSrv extends ServerTpl {
      * @param key 缓存key
      * @return 缓存值
      */
+    @EL(name = "${name}.remove")
     public Object remove(String key) { return expire(key, null); }
 
 

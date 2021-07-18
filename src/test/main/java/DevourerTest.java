@@ -14,17 +14,17 @@ public class DevourerTest {
     void testParallel() throws Exception {
         Devourer devourer = new Devourer();
         AtomicInteger count = new AtomicInteger(0);
-        devourer.parallel(2);
+        devourer.parallel(3);
         long start = System.currentTimeMillis();
         AtomicBoolean stop = new AtomicBoolean(false);
         while (System.currentTimeMillis() - start < 1000 * 15 && !stop.get()) {
             devourer.offer(() -> {
                 int p = devourer.parallel();
-                if (p > 2) {
+                if (p > 3) {
                     log.info("========================" + p);
                     stop.set(true);
                 }
-                log.info("wait " + devourer.getWaitingCount());
+                log.info("wait " + devourer.getWaitingCount() + ", " + p);
 //                Utils.http().get("http://xnatural.cn:9090/test/cus?p1=" + count.getAndIncrement()).debug().execute();
 //                try {
 //                    Thread.sleep(2000 + new Random().nextInt(10000));

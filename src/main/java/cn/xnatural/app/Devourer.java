@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Deque;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -38,13 +37,9 @@ public class Devourer {
      */
     protected int parallelLimit = 1;
     /**
-     * 并发限制锁
-     */
-    protected final AtomicBoolean parallelLock = new AtomicBoolean(false);
-    /**
      * 当前并发数
      */
-    protected final AtomicInteger parallel = new AtomicInteger(0);
+    protected final AtomicInteger parallelLatch = new AtomicInteger(0);
     /**
      * 任务执行对列
      */
@@ -103,16 +98,20 @@ public class Devourer {
             else pauseCondition = null;
         }
         if (waiting.isEmpty()) return;
-        // TODO 会有 cas aba 问题?
-        if (!parallelLock.compareAndSet(false, true)) return;
-        // 1.只有一个线程执行,必须保证正在执行的函数不超过 parallelLimit
+        // 1.必须保证正在执行的函数不超过 parallelLimit
         // 2.必须保证这里waiting对列中不为空
         // 3.必须保证不能出现情况: waiting 对列中有值, 但没有被执行
-        Runnable fn = () -> {
+        int latch = parallelLatch.get();
+        if (latch >= parallelLimit) return;
+        if (!parallelLatch.compareAndSet(latch, latch + 1)) {
+            if (parallelLatch.get() < parallelLimit) trigger();
+            return;
+        }
+        exec.execute(() -> {
             Runnable task = null;
             try {
                 task = waiting.poll();
-                if (task != null) { task.run(); }
+                if (task != null) task.run();
             } catch (Throwable ex) {
                 if (task != null && failMaxKeep != null && failMaxKeep > 0 && (getWaitingCount() < failMaxKeep)) waiting.addFirst(task);
                 if (errorHandler != null) {
@@ -125,14 +124,10 @@ public class Devourer {
                     log.error(key, ex);
                 }
             } finally {
-                parallel.decrementAndGet();
+                parallelLatch.decrementAndGet();
                 if (!waiting.isEmpty()) trigger(); // 持续不断执行对列中的任务
             }
-        };
-        for (; parallel.get() < parallelLimit && !waiting.isEmpty(); parallel.incrementAndGet()) {
-            exec.execute(fn);
-        }
-        parallelLock.set(false);
+        });
     }
 
 
@@ -228,7 +223,7 @@ public class Devourer {
      * 正在执行的任务数
      * @return 任务数
      */
-    public int parallel() { return parallel.get(); }
+    public int parallel() { return parallelLatch.get(); }
 
 
     /**
