@@ -33,13 +33,9 @@ public class Devourer {
      */
     protected Integer failMaxKeep = 0;
     /**
-     * 并发限制
+     * 流量限制锁
      */
-    protected int parallelLimit = 1;
-    /**
-     * 当前并发数
-     */
-    protected final AtomicInteger parallelLatch = new AtomicInteger(0);
+    protected final LatchLock lock = new LatchLock();
     /**
      * 任务执行对列
      */
@@ -55,8 +51,8 @@ public class Devourer {
 
 
     /**
-     * 创建
-     * @param key 标识
+     * 创建对列
+     * @param key 对列标识
      * @param exec 线程池
      */
     public Devourer(String key, Executor exec) {
@@ -66,13 +62,35 @@ public class Devourer {
         this.exec = exec;
     }
 
+    /**
+     * 创建对列
+     * @param key 对列标识
+     */
+    public Devourer(String key) {
+        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key not empty");
+        this.key = key;
+        this.exec = new ThreadPoolExecutor(4, 8, 2L, TimeUnit.HOURS,
+                new LinkedBlockingQueue(100000),
+                new ThreadFactory() {
+                    final AtomicInteger i = new AtomicInteger();
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, key + "-" + i.incrementAndGet());
+                    }
+                });
+    }
+
     public Devourer() {
         this.key = Devourer.class.getSimpleName() + "@" + Integer.toHexString(hashCode());
-        this.exec = Executors.newFixedThreadPool(4, new ThreadFactory() {
-            final AtomicInteger i = new AtomicInteger(0);
-            @Override
-            public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
-        });
+        this.exec = new ThreadPoolExecutor(4, 8, 2L, TimeUnit.HOURS,
+                new LinkedBlockingQueue(100000),
+                new ThreadFactory() {
+                    final AtomicInteger i = new AtomicInteger();
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, key + "-" + i.incrementAndGet());
+                    }
+                });
     }
 
 
@@ -101,12 +119,7 @@ public class Devourer {
         // 1.必须保证正在执行的函数不超过 parallelLimit
         // 2.必须保证这里waiting对列中不为空
         // 3.必须保证不能出现情况: waiting 对列中有值, 但没有被执行
-        int latch = parallelLatch.get();
-        if (latch >= parallelLimit) return;
-        if (!parallelLatch.compareAndSet(latch, latch + 1)) {
-            if (parallelLatch.get() < parallelLimit) trigger();
-            return;
-        }
+        if (!lock.tryLock()) return;
         exec.execute(() -> {
             Runnable task = null;
             try {
@@ -124,7 +137,7 @@ public class Devourer {
                     log.error(key, ex);
                 }
             } finally {
-                parallelLatch.decrementAndGet();
+                lock.release();
                 if (!waiting.isEmpty()) trigger(); // 持续不断执行对列中的任务
             }
         });
@@ -138,7 +151,7 @@ public class Devourer {
      */
     public Devourer parallel(int parallel) {
         if (parallel < 1) throw new IllegalArgumentException("Param parallel >= 1");
-        this.parallelLimit = parallel;
+        lock.limit(parallel);
         return this;
     }
 
@@ -223,7 +236,7 @@ public class Devourer {
      * 正在执行的任务数
      * @return 任务数
      */
-    public int parallel() { return parallelLatch.get(); }
+    public int parallel() { return lock.getLatchSize(); }
 
 
     /**

@@ -10,7 +10,7 @@
     <version>1.0.5</version>
 
     <name>app</name>
-    <description>java轻量级通用框架</description>
+    <description>java轻量级通用异步框架</description>
     <url>https://gitee.com/xnat/app</url>
 
     <dependencies>

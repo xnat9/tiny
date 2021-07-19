@@ -3,6 +3,8 @@
 
 > 系统只一个公用线程池: 所有的执行都被抽象成Runnable加入到公用线程池中执行
 
+> 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
+
 > 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
 
 <!--
@@ -327,8 +329,8 @@ app.addSource(new ServerTpl() {
 * 配置文件支持简单的 ${} 属性替换
 * 系统属性: System.getProperties() 优先级最高
 
-## 对列执行器(Devourer)
-> 当需要按顺序控制任务 一个一个, 两个两个... 的执行时
+## 对列执行器 Devourer
+> 当需要控制任务最多 一个一个, 两个两个... 的执行时
 
 > + 服务基础类(ServerTpl)提供方法: queue
 
@@ -362,6 +364,20 @@ queue("save")
         // 2. 条件暂停
         // me.suspend(queue -> true);
     };
+```
+
+### 并发流量控制锁 LatchLock
+> 当被执行代码块需要控制同时线程执行的个数时
+```java
+final LatchLock lock = new LatchLock();
+lock.limit(3); // 设置并发限制. 默认为1
+if (lock.tryLock()) { // 尝试获取一个锁
+    try {
+        // 被执行的代码块    
+    } finally {
+        lock.release(); // 释放一个锁
+    }
+}
 ```
 
 ## 简单缓存 CacheSrv
@@ -466,10 +482,12 @@ Utils.toMapper(bean).showClassProp().build();
 ## 应用例子
 [Demo](https://gitee.com/xnat/appdemo)
 
-[rule](https://gitee.com/xnat/rule)
+[grule](https://gitee.com/xnat/grule)
 
-# TODO
-* CacheSrv accessTime
+# 1.0.5 ing
+- [x] LatchLock
+- [ ] 升enet 0.0.21
+- [ ] CacheSrv accessTime
 
 # 参与贡献
 

@@ -12,8 +12,7 @@ public class DevourerTest {
 
     @Test
     void testParallel() throws Exception {
-        Devourer devourer = new Devourer();
-        AtomicInteger count = new AtomicInteger(0);
+        Devourer devourer = new Devourer("parallel");
         devourer.parallel(3);
         long start = System.currentTimeMillis();
         AtomicBoolean stop = new AtomicBoolean(false);
@@ -39,11 +38,31 @@ public class DevourerTest {
 
 
     @Test
+    void testParallel2() throws Exception {
+        Devourer devourer = new Devourer("parallel2");
+        devourer.parallel(3);
+        for (int i = 0; i < 10; i++) {
+            int j = i + 1;
+            devourer.offer(() -> {
+                log.info("start-" + j);
+                try {
+                    Thread.sleep(1000 * 5);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                log.info("end-" + j);
+            });
+        }
+        Thread.sleep(1000 * 60 * 3);
+    }
+
+
+    @Test
     void testSuspend() throws Exception {
-        Devourer devourer = new Devourer();
+        Devourer devourer = new Devourer("suspend");
         devourer.offer(() -> {
             log.info("执行");
-            devourer.suspend(Duration.ofSeconds(10));
+            devourer.suspend(Duration.ofMillis(1500));
         });
 
         for (int i = 0; i < 50; i++) {
