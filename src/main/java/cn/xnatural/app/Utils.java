@@ -236,6 +236,8 @@ public class Utils {
 
         public Httper get(String url) { this.urlStr = url; this.method = "GET"; return this; }
         public Httper post(String url) { this.urlStr = url; this.method = "POST"; return this; }
+        public Httper put(String url) { this.urlStr = url; this.method = "PUT"; return this; }
+        public Httper delete(String url) { this.urlStr = url; this.method = "DELETE"; return this; }
         /**
          *  设置 content-type
          * @param contentType application/json, multipart/form-data, application/x-www-form-urlencoded, text/plain
