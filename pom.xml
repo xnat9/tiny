@@ -17,7 +17,7 @@
         <dependency>
             <groupId>cn.xnatural.enet</groupId>
             <artifactId>enet-event</artifactId>
-            <version>0.0.20</version>
+            <version>0.0.21</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>

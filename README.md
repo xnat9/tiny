@@ -486,7 +486,7 @@ Utils.toMapper(bean).showClassProp().build();
 
 # 1.0.5 ing
 - [x] LatchLock
-- [ ] 升enet 0.0.21
+- [x] 升enet 0.0.21
 - [ ] CacheSrv accessTime
 
 # 参与贡献
