@@ -57,7 +57,7 @@ endif
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
@@ -484,9 +484,7 @@ Utils.toMapper(bean).showClassProp().build();
 
 [grule](https://gitee.com/xnat/grule)
 
-# 1.0.5 ing
-- [x] LatchLock
-- [x] 升enet 0.0.21
+# 1.0.6 ing
 - [ ] CacheSrv accessTime
 
 # 参与贡献
