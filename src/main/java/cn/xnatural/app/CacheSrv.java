@@ -16,14 +16,7 @@ public class CacheSrv extends ServerTpl {
     /**
      * 数据存放
      */
-    protected final Lazier<Map<String, Record>> _data = new Lazier<>(() -> new ConcurrentHashMap<String, Record>( _limit.get() / 2) {
-        @Override
-        public Record remove(Object key) {
-            Record v = super.remove(key);
-            log.debug("Removed cache: {}", key);
-            return v;
-        }
-    });
+    protected final Lazier<Map<String, Record>> _data = new Lazier<>(() -> new ConcurrentHashMap( _limit.get() / 2));
 
 
     public CacheSrv(String name) { super(name); }
@@ -96,8 +89,8 @@ public class CacheSrv extends ServerTpl {
                 record.updateTime = System.currentTimeMillis();
                 log.debug("Updated cache: {}, expire: {}", key, expire);
             } else {
-                log.debug("Removed cache: {}", key);
                 _data.get().remove(key);
+                log.debug("Removed cache: {}", key);
             }
             return record.value;
         }
