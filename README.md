@@ -380,6 +380,51 @@ if (lock.tryLock()) { // 尝试获取一个锁
 }
 ```
 
+## 无限递归优化实现 Recursion
+> 解决java无尾递归替换方案. 例:
+  ```java
+    System.out.println(factorialTailRecursion(1, 10_000_000).invoke());
+  ```
+  ```java
+      /**
+       * 阶乘计算
+       * @param factorial 当前递归栈的结果值
+       * @param number 下一个递归需要计算的值
+       * @return 尾递归接口,调用invoke启动及早求值获得结果
+       */
+      Recursion<Long> factorialTailRecursion(final long factorial, final long number) {
+          if (number == 1) {
+              // new Exception().printStackTrace();
+              return Recursion.done(factorial);
+          }
+          else {
+              return Recursion.call(() -> factorialTailRecursion(factorial + number, number - 1));
+          }
+      }
+  ```
+> 备忘录模式:提升递归效率. 例:
+  ```java
+    System.out.println(fibonacciMemo(47));
+  ```
+  ```java
+    /**
+     * 使用同一封装的备忘录模式 执行斐波那契策略
+     * @param n 第n个斐波那契数
+     * @return 第n个斐波那契数
+     */
+    long fibonacciMemo(long n) {
+          return Recursion.memo((fib, number) -> {
+              if (number == 0 || number == 1) return 1L;
+              return fib.apply(number-1) + fib.apply(number-2);
+          }, n);
+    }
+  ```
+
+参照: 
+  - https://www.cnblogs.com/invoker-/p/7723420.html
+  - https://www.cnblogs.com/invoker-/p/7728452.html
+
+
 ## 简单缓存 CacheSrv
 ```java
 // 添加缓存服务
@@ -415,23 +460,23 @@ final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class
 ```java
 // get
 Utils.http().get("http://xnatural.cn:9090/test/cus?p2=2")
-        .header("test", "test") // 自定义header
-        .cookie("sessionId", "xx") // 自定义 cookie
-        .connectTimeout(5000) // 设置连接超时 5秒
-        .readTimeout(15000) // 设置读结果超时 15秒
-        .param("p1", 1) // 添加参数
-        .debug().execute();
+    .header("test", "test") // 自定义header
+    .cookie("sessionId", "xx") // 自定义 cookie
+    .connectTimeout(5000) // 设置连接超时 5秒
+    .readTimeout(15000) // 设置读结果超时 15秒
+    .param("p1", 1) // 添加参数
+    .debug().execute();
 ```
 ```java
 // post
 Utils.http().post("http://xnatural.cn:9090/test/cus")
-        .debug().execute();
+    .debug().execute();
 ```
 ```java
 // post 表单
 Utils.http().post("http://xnatural.cn:9090/test/form")
-        .param("p1", "p1")
-        .debug().execute();
+    .param("p1", "p1")
+    .debug().execute();
 ```
 ```java
 // post 上传文件
@@ -441,8 +486,8 @@ Utils.http().post("http://xnatural.cn:9090/test/upload")
 
 // post 上传文件流. 一般上传大文件 可配合 汇聚流 使用
 Utils.http().post("http://xnatural.cn:9090/test/upload")
-  .fileStream("file", "test.md", new FileInputStream("d:/tmp/test.md"))
-  .debug().execute();
+    .fileStream("file", "test.md", new FileInputStream("d:/tmp/test.md"))
+    .debug().execute();
 ```
 ```java
 // post json
@@ -453,8 +498,8 @@ Utils.http().post("http://xnatural.cn:9090/test/json")
 ```java
 // post 文本
 Utils.http().post("http://xnatural.cn:9090/test/string")
-        .textBody("xxxxxxxxxxxxxxxx")
-        .debug().execute();
+    .textBody("xxxxxxxxxxxxxxxx")
+    .debug().execute();
 ```
 
 ## Map构建器
@@ -485,6 +530,7 @@ Utils.toMapper(bean).showClassProp().build();
 [grule](https://gitee.com/xnat/grule)
 
 # 1.0.6 ing
+- [x] java无限递归优化实现
 - [ ] CacheSrv accessTime
 
 # 参与贡献
