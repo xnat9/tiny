@@ -11,17 +11,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * 简单内存缓存服务
  */
 public class CacheSrv extends ServerTpl {
-    protected final Lazier<Integer> _limit = new Lazier<>(() -> getInteger("itemLimit", 1000));
+    protected final Lazier<Integer> _limit = new Lazier(() -> getInteger("itemLimit", 1000));
 
     /**
      * 数据存放
      */
-    protected final Lazier<Map<String, Record>> _data = new Lazier<>(() -> new ConcurrentHashMap( _limit.get() / 2));
+    protected final Lazier<Map<String, Record>> _data = new Lazier(() -> new ConcurrentHashMap( _limit.get() / 2));
 
 
     public CacheSrv(String name) { super(name); }
 
-    public CacheSrv() { super(CacheSrv.class.getSimpleName()); }
+    public CacheSrv() {}
 
 
     /**
@@ -45,8 +45,8 @@ public class CacheSrv extends ServerTpl {
     public CacheSrv set(String key, Object value, Duration expire) {
         log.trace("Set cache. key: {}, value: {}, expire: {}", key, value, expire);
         _data.get().put(key, new Record(expire == null ? null : expire.toMillis(), value));
-        async(() -> { // 异步清除多余的缓存
-            boolean onlyCleanExpired = _data.get().size() < _limit.get(); // 是否只清理已过期的数据
+        boolean onlyCleanExpired = _data.get().size() < _limit.get(); // 是否只清理已过期的数据
+        Runnable clean = () -> {
             Map.Entry<String, Record> oldEntry = null; // 最老的缓存
             long oldLeft = 0;
             for (Iterator<Map.Entry<String, Record>> iter = _data.get().entrySet().iterator(); iter.hasNext(); ) { //遍历选出最应该被移出的缓存记录
@@ -69,7 +69,9 @@ public class CacheSrv extends ServerTpl {
             if (oldEntry != null) {
                 _data.get().remove(oldEntry.getKey());
             }
-        });
+        };
+        if (onlyCleanExpired) async(clean); // 异步清除多余的缓存
+        else clean.run(); // 同步清理: 避免异步排对太多而不能及时清理造成内存占用过多而溢出
         return this;
     }
 
@@ -119,6 +121,12 @@ public class CacheSrv extends ServerTpl {
         if (record.valid()) return record.value;
         _data.get().remove(key);
         return null;
+    }
+
+
+    @Override
+    public String toString() {
+        return "CacheSrv@" + Integer.toHexString(hashCode()) + "[size=" + _data.get().size() + ", limit=" + _limit.get() + "]";
     }
 
 
