@@ -5,13 +5,15 @@ import cn.xnatural.http.HttpServer;
 import cn.xnatural.jpa.Repo;
 import cn.xnatural.remoter.Remoter;
 import cn.xnatural.sched.Sched;
+import org.junit.jupiter.api.Test;
 
 import javax.inject.Named;
 import java.time.Duration;
 
 public class AppTest {
 
-    public static void main(String[] args) throws Exception {
+    @Test
+    void appTest() throws Exception {
         final AppContext app = new AppContext();
         app.addSource(new ServerTpl("server1") {
             @EL(name = "sys.starting")
@@ -87,5 +89,19 @@ public class AppTest {
             void stop() { remoter.stop(); }
         });
         app.start();
+    }
+
+
+    @Test
+    void sysLoadTest() throws Exception {
+        final AppContext app = new AppContext();
+        app.start();
+        for (int i = 0; i < 100000; i++) {
+            int finalI = i;
+            app.exec().execute(() -> {
+                System.out.println("Task " + finalI);
+            });
+        }
+        Thread.sleep(10 * 60 * 1000);
     }
 }

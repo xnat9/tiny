@@ -527,10 +527,11 @@ Utils.toMapper(bean).showClassProp().build();
 ## 应用例子
 [Demo](https://gitee.com/xnat/appdemo)
 
-[grule](https://gitee.com/xnat/grule)
+[GRule](https://gitee.com/xnat/grule)
 
 # 1.0.6 ing
 - [x] java无限递归优化实现
+- [x] 缓存同步及时清理
 - [ ] CacheSrv accessTime
 
 # 参与贡献

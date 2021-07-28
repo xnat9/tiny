@@ -72,7 +72,7 @@ public class AppContext {
         ThreadPoolExecutor exec = new ThreadPoolExecutor(
                 getAttr("sys.exec.corePoolSize", Integer.class, 8), maxSize,
                 getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
-                new LinkedBlockingQueue<>(maxSize * 2),
+                new LinkedBlockingQueue<>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)),
                 new ThreadFactory() {
                     AtomicInteger i = new AtomicInteger(1);
                     @Override
@@ -81,8 +81,8 @@ public class AppContext {
                     }
                 }
         ) {
-            @Override
-            protected void beforeExecute(Thread t, Runnable r) { super.beforeExecute(t, r); populateLoad(); }
+//            @Override
+//            protected void beforeExecute(Thread t, Runnable r) { super.beforeExecute(t, r); populateLoad(); }
 
             @Override
             public void execute(Runnable fn) {
@@ -95,28 +95,34 @@ public class AppContext {
                 }
             }
 
-            @Override
-            protected void afterExecute(Runnable r, Throwable t) { super.afterExecute(r, t); populateLoad(); }
-
             int gap1 = getCorePoolSize() / 3;
             int gap2 = (getMaximumPoolSize() - getCorePoolSize()) / 3;
 
             // 计算线程池负载
             void populateLoad() {
+                int load = sysLoad;
                 int ac = getActiveCount();
+                int wait = 0;
                 if (getCorePoolSize() - ac > gap1 * 2) sysLoad = 2;
                 else if (getCorePoolSize() - ac > gap1) sysLoad = 3;
                 else if (getCorePoolSize() - ac > 0) sysLoad = 4;
                 else if (getCorePoolSize() == ac) sysLoad = 5;
-                else if (getQueue().size() > 0) sysLoad = 6;
-                    // 超过核心线程的线程数在工作
+                else if ((wait = getQueue().size()) > 0) sysLoad = 6;
+                // 超过核心线程的线程数在工作
                 else if (getMaximumPoolSize() - ac > gap2 * 2) sysLoad = 7;
                 else if (getMaximumPoolSize() - ac > gap2) sysLoad = 8;
                 else if (getMaximumPoolSize() - ac > 0) sysLoad = 9;
                 else if (getMaximumPoolSize() == ac) sysLoad = 10;
+                if (sysLoad > 6 && load < sysLoad) {
+                    log.warn("App load up: {}, active: {}, wait: {}", sysLoad, ac, wait);
+                } else if (load > 6 && sysLoad < load) {
+                    log.info("App load down: {}, active: {}, wait: {}", sysLoad, ac, wait);
+                }
             }
         };
-        // exec.allowCoreThreadTimeOut(true)
+        if (getAttr("sys.exec.allowCoreThreadTimeOut", Boolean.class, false)) {
+            exec.allowCoreThreadTimeOut(true);
+        }
         return exec;
     });
     /**
