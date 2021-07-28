@@ -277,11 +277,14 @@ public class AppContext {
      * 添加对象源
      * {@link #ep} 会找出source对象中所有其暴露的功能. 即: 用 @EL 标注的方法
      * 注: 为每个对象源都配一个 name 属性标识
-     * @param source bean 对象
+     * @param sources bean 对象
      * @return {@link AppContext}
      */
-    public AppContext addSource(Object source) {
-        return addSource(source, source instanceof ServerTpl ? ((ServerTpl) source).name : getClass().getName().contains("$") ? getClass().getSuperclass().getSimpleName() : getClass().getSimpleName());
+    public AppContext addSource(Object... sources) {
+        for (Object source : sources) {
+            addSource(source, source instanceof ServerTpl ? ((ServerTpl) source).name : getClass().getName().contains("$") ? getClass().getSuperclass().getSimpleName() : getClass().getSimpleName());
+        }
+        return this;
     }
 
 
@@ -544,5 +547,5 @@ public class AppContext {
      * 负载值
      * @return 1-10
      */
-    public Integer getSysLoad() { return sysLoad; }
+    // public Integer getSysLoad() { return sysLoad; }
 }
