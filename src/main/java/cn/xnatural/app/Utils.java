@@ -304,7 +304,7 @@ public class Utils {
                 URL url = null;
                 if (urlStr == null || urlStr.isEmpty()) throw new IllegalArgumentException("url不能为空");
                 if ("GET".equals(method)) url = new URL(buildUrl(urlStr, params));
-                else if ("POST".equals(method)) url = new URL(urlStr);
+                else url = new URL(urlStr);
                 conn = (HttpURLConnection) url.openConnection();
                 if (conn instanceof HttpsURLConnection) { // 如果是https, 就忽略验证
                     SSLContext sc = SSLContext.getInstance("TLSv1.2"); // "TLS"
