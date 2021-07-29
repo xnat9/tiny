@@ -1,27 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration>
-	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+
+	<property name="log_path" value="${log.path:-./log}" />
+	<property name="log_file_name" value="${log.file.name:-app}" />
+
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
 			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%-7thread] [%-40.40C :%-3L] => %m%n</pattern>
 		</encoder>
 	</appender>
 
-<!--	<appender name="DETAIL" class="ch.qos.logback.core.rolling.RollingFileAppender" additivity="false">-->
-<!--		<File>${LOG_HOME}/app.log</File>-->
-<!--		<encoder>-->
-<!--			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-7thread] [%-5level] [%-40.40C :%-3L] => %m%n</pattern>-->
-<!--		</encoder>-->
-<!--		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
-<!--			<fileNamePattern>${LOG_HOME}/app.log.%d{yyyyMMdd}.gz</fileNamePattern>-->
-<!--		</rollingPolicy>-->
-<!--	</appender>-->
-
-	<logger name="cn.xnatural.app" level="info"/>
-	<logger name="cn.xnatural.remoter" level="info"/>
+	<appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<File>${log_path}/${log_file_name}.log</File>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%-7thread] [%-40.40C :%-3L] => %m%n</pattern>
+			<charset>utf-8</charset>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${log_path}/${log_file_name}.log.%d{yyyyMMdd}.%i.log</fileNamePattern>
+			<maxHistory>${log.maxHistory:-500}</maxHistory>
+			<maxFileSize>${log.maxFileSize:-100GB}</maxFileSize>
+		</rollingPolicy>
+	</appender>
 
 	<root level="INFO">
-<!--		<appender-ref ref="DETAIL"/>-->
-		<appender-ref ref="CONSOLE"/>
+		<appender-ref ref="console"/>
+		<!--		<appender-ref ref="file"/>-->
 	</root>
 </configuration>
