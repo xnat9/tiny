@@ -57,7 +57,7 @@ endif
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
 </dependency>
 ```
 
@@ -529,9 +529,7 @@ Utils.toMapper(bean).showClassProp().build();
 
 [GRule](https://gitee.com/xnat/grule)
 
-# 1.0.6 ing
-- [x] java无限递归优化实现
-- [x] 缓存同步及时清理
+# 1.0.7 ing
 - [ ] CacheSrv accessTime
 
 # 参与贡献
