@@ -48,8 +48,8 @@ public interface Recursion<T> {
         return Stream.iterate(this, Recursion::apply)
                 .filter(Recursion::isFinished)
                 .findFirst()
-                .get()
-                .getResult();
+                .map(Recursion::getResult)
+                .orElse(null);
     }
 
 
@@ -65,7 +65,6 @@ public interface Recursion<T> {
 
     /**
      * 结束当前递归，重写对应的默认方法的值,完成状态改为true,设置最终返回结果,设置非法递归调用
-     *
      * @param value 最终递归值
      * @param <T>   T
      * @return 一个isFinished状态true的尾递归, 外部通过调用接口的invoke方法及早求值, 启动递归求值。
@@ -90,17 +89,15 @@ public interface Recursion<T> {
      * @param input 输入值
      * @param <I> 输出值类型
      * @param <R> 返回值类型
-     * @return 将输入值输入递归策略算法，计算出的最终结果
+     * @return 将输入值输入递归策略算法,计算出的最终结果
      */
     static <I, R> R memo(final BiFunction<Function<I, R>, I, R> function, final I input) {
-        final Function<I, R> memoFn = new Function<I, R>() {
-            final Map<I, R> cache = new HashMap<>();
+        final Map<I, R> cache = new HashMap<>();
+        return new Function<I, R>() {
             @Override
             public R apply(final I input) {
                 return cache.computeIfAbsent(input, key -> function.apply(this, key));
             }
-        };
-
-        return memoFn.apply(input);
+        }.apply(input);
     }
 }

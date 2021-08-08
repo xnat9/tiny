@@ -12,7 +12,7 @@ public class RecursionTest {
 
     @Test
     void fibonacciTest() {
-        System.out.println(fibonacciMemo(47));
+        System.out.println(fibonacciMemo(100));
     }
 
 
@@ -23,7 +23,10 @@ public class RecursionTest {
      */
     long fibonacciMemo(long n) {
         return Recursion.memo((fib, number) -> {
-            if (number == 0 || number == 1) return 1L;
+            if (number == 0 || number == 1) {
+                new Exception().printStackTrace();
+                return 1L;
+            }
             return fib.apply(number -1 ) + fib.apply(number-2);
         }, n);
     }
