@@ -48,6 +48,10 @@ public class Devourer {
      * 暂停执行条件
      */
     protected Predicate<Devourer> pauseCondition;
+    /**
+     * 使用最后入队想任务/任务最后有效 {@link #useLast(boolean)}
+     */
+    protected boolean useLast;
 
 
     /**
@@ -74,9 +78,7 @@ public class Devourer {
                 new ThreadFactory() {
                     final AtomicInteger i = new AtomicInteger();
                     @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, key + "-" + i.incrementAndGet());
-                    }
+                    public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
                 });
     }
 
@@ -87,9 +89,7 @@ public class Devourer {
                 new ThreadFactory() {
                     final AtomicInteger i = new AtomicInteger();
                     @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, key + "-" + i.incrementAndGet());
-                    }
+                    public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
                 });
     }
 
@@ -101,6 +101,7 @@ public class Devourer {
      */
     public Devourer offer(Runnable fn) {
         if (fn == null) return this;
+        if (useLast) waiting.clear();
         waiting.offer(fn);
         trigger();
         return this;
@@ -193,9 +194,7 @@ public class Devourer {
         pauseCondition = new Predicate<Devourer>() {
             final Pause pause = new Pause(duration);
             @Override
-            public boolean test(Devourer devourer) {
-                return !pause.isTimeout();
-            }
+            public boolean test(Devourer devourer) { return !pause.isTimeout(); }
         };
         return this;
     }
@@ -221,6 +220,13 @@ public class Devourer {
 
 
     /**
+     * 是否只使用队列最后一个, 清除队列前面的任务
+     * 适合: 入队的频率比出队高, 前面的任务可有可无
+     */
+    public Devourer useLast(boolean useLast) { this.useLast = useLast; return this; }
+
+
+    /**
      * 是否是暂停状态
      * @return true: 暂停中
      */
@@ -234,7 +240,6 @@ public class Devourer {
 
     /**
      * 正在执行的任务数
-     * @return 任务数
      */
     public int parallel() { return lock.getLatchSize(); }
 

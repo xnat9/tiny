@@ -62,7 +62,7 @@ endif
 ```
 
 # 系统事件
-+ sys.inited:  应用始化完成(环境配置, 事件中心, 系统线程池)
++ sys.inited:  应用始化完成(环境配置, 系统线程池, 事件中心)
 + sys.starting: 通知所有服务启动. 一般为ServerTpl
 + sys.started: 应用启动完成
 + sys.stopping: 应用停止事件(kill pid)
@@ -329,7 +329,7 @@ app.addSource(new ServerTpl() {
 * 配置文件支持简单的 ${} 属性替换
 * 系统属性: System.getProperties() 优先级最高
 
-## 对列执行器 Devourer
+## 对列执行器/并发控制器 Devourer
 > 当需要控制任务最多 一个一个, 两个两个... 的执行时
 
 > + 服务基础类(ServerTpl)提供方法: queue
@@ -355,7 +355,7 @@ queue("save").offer(() -> {
 ```
 ```java
 // 暂停执行, 一般用于发生错误时
-// 注: 必须有新的任务入对, 重新触发继续执行
+// 注: 必须有新的任务入对, 重新触发继续执行. 或者resume方法手动恢复执行
 queue("save")
     .errorHandle {ex, me ->
         // 发生错误时, 让对列暂停执行(不影响新任务入对)
@@ -364,6 +364,16 @@ queue("save")
         // 2. 条件暂停
         // me.suspend(queue -> true);
     };
+```
+```java
+// 是否只使用队列最后一个, 清除队列前面的任务
+// 适合: 入队的频率比出队高, 前面的任务可有可无
+// 例: increment数据库的一个字段的值
+Devourer q = queue("increment").useLast(true);
+for (int i = 0; i < 20; i++) {
+    // 入队快, 任务执行慢， 中间的可以不用执行
+    q.offer(() -> repo.execute("update test set count=?", i));
+}
 ```
 
 ### 并发流量控制锁 LatchLock
@@ -530,6 +540,7 @@ Utils.toMapper(bean).showClassProp().build();
 [GRule](https://gitee.com/xnat/grule)
 
 # 1.0.7 ing
+- [x] feat: Devourer use last:队列最后任务有效
 - [ ] CacheSrv accessTime
 
 # 参与贡献

@@ -76,4 +76,23 @@ public class DevourerTest {
         devourer.resume();
         Thread.sleep(60 * 1000);
     }
+
+
+    @Test
+    void testUseLast() throws Exception {
+        Devourer devourer = new Devourer("useLast").useLast(true);
+        for (int i = 0; i < 20; i++) {
+            Thread.sleep(100);
+            int finalI = i;
+            devourer.offer(() -> {
+                log.info("==========" + finalI);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    log.error("", e);
+                }
+            });
+        }
+        Thread.sleep(20 * 1000);
+    }
 }
