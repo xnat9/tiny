@@ -322,12 +322,19 @@ app.addSource(new ServerTpl() {
 ```
 
 ## 环境配置
-* 系统属性(-Dconfigdir): configdir 指定配置文件路径. 默认:类路径
-* 系统属性(-Dconfigname): configname 指定配置文件名. 默认:app
-* 系统属性(-Dprofile): profile 指定启用特定的配置
+>+ 系统属性(-Dconfigname): configname 指定配置文件名. 默认:app
+>+ 系统属性(-Dprofile): profile 指定启用特定的配置
+>+ 系统属性(-Dconfigdir): configdir 指定额外配置文件目录
+
 * 只读取properties文件. 按顺序读取app.properties, app-[profile].properties 两个配置文件
 * 配置文件支持简单的 ${} 属性替换
-* 系统属性: System.getProperties() 优先级最高
+  
+  > 加载顺序(优先级从小到大):
+  * classpath:app.properties, classpath:app-[profile].properties
+  * file:./app.properties, file:./app-[profile].properties
+  * configdir:app.properties, configdir:app-[profile].properties
+  * 自定义环境配置: AppContext#customEnv(Map)
+  * System.getProperties()
 
 ## 对列执行器/并发控制器 Devourer
 > 当需要控制任务最多 一个一个, 两个两个... 的执行时
@@ -541,6 +548,7 @@ Utils.toMapper(bean).showClassProp().build();
 
 # 1.0.7 ing
 - [x] feat: Devourer use last:队列最后任务有效
+- [x] refactor: 环境属性加载
 - [ ] CacheSrv accessTime
 
 # 参与贡献

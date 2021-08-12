@@ -67,14 +67,14 @@ public class AppContext {
      * see:  {@link java.util.concurrent.ThreadPoolExecutor#runWorker(java.util.concurrent.ThreadPoolExecutor.Worker)} 这里面当有异常抛出时 1128行代码 {@link java.util.concurrent.ThreadPoolExecutor#processWorkerExit(java.util.concurrent.ThreadPoolExecutor.Worker, boolean)}
      */
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
-        log.debug("init sys executor ... ");
+        log.debug("init sys executor ...");
         Integer maxSize = getAttr("sys.exec.maximumPoolSize", Integer.class, 32);
         ThreadPoolExecutor exec = new ThreadPoolExecutor(
                 getAttr("sys.exec.corePoolSize", Integer.class, 8), maxSize,
                 getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
                 new LinkedBlockingQueue<>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)),
                 new ThreadFactory() {
-                    AtomicInteger i = new AtomicInteger(1);
+                    final AtomicInteger i = new AtomicInteger(1);
                     @Override
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "sys-" + i.getAndIncrement());
@@ -164,33 +164,95 @@ public class AppContext {
 
     /**
      * 环境属性配置.只支持properties文件, 支持${}属性替换
+     * 加载顺序(优先级从小到大):
+     * classpath:app.properties, classpath:app-[profile].properties
+     * file:./app.properties, file:./app-[profile].properties
+     * configdir:app.properties, configdir:app-[profile].properties
+     * {@link #customEnv(Map)}
+     * System.getProperties()
      */
     private final Lazier<Map<String, Object>> _env = new Lazier<>(() -> {
-        Map<String, Object> result = new ConcurrentHashMap<>(); // 结果属性集
+        final Map<String, Object> result = new ConcurrentHashMap<>(); // 结果属性集
         System.getProperties().forEach((k, v) -> result.put(k.toString(), v));
-        String configdir = (String) result.get("configdir"); // 配置文件的目录. 默认classpath路径
         String configname = (String) result.getOrDefault("configname", "app");// 配置文件名. 默认app
         String profile = (String) result.get("profile");
-        List<String> cfgNames = new LinkedList<>();
-        cfgNames.add(configname + ".properties");
-        if (profile != null && !profile.trim().isEmpty()) {
-            cfgNames.add(configname + "-" + profile.trim() + ".properties");
-        }
-        for (String name : cfgNames) {
-            try (InputStream is = (configdir == null || configdir.isEmpty()) ? getClass().getClassLoader().getResourceAsStream(name) : new FileInputStream(new File(configdir, name))) {
-                if (is == null) continue;
+        String configdir = (String) result.get("configdir"); // 指定额外配置文件的目录
+
+        //1. classpath
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(configname + ".properties")) {
+            if (is != null) {
                 Properties p = new Properties();
                 p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
                 p.forEach((k, v) -> result.put(k.toString(), v));
-                // new Yaml().loadAs(new InputStreamReader(is, StandardCharsets.UTF_8), Map.class).forEach((k, v) -> result.put(k.toString(), v));
+            }
+        } catch (IOException e) {
+            log.error("Load classpath config file '" +configname + ".properties"+ "' error", e);
+        }
+        if (profile != null) {
+            String fName = configname + "-" + profile + ".properties";
+            try (InputStream is = getClass().getClassLoader().getResourceAsStream(fName)) {
+                if (is != null) {
+                    Properties p = new Properties();
+                    p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+                    p.forEach((k, v) -> result.put(k.toString(), v));
+                }
             } catch (IOException e) {
-                log.error("Load config file '" +name+ "' error", e);
+                log.error("Load classpath config file '" +fName+ "' error", e);
             }
         }
+        //2. file:./
+        try (InputStream is = new FileInputStream(configname + ".properties")) {
+            Properties p = new Properties();
+            p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+            p.forEach((k, v) -> result.put(k.toString(), v));
+        } catch (FileNotFoundException e) {
+            log.trace("Load config file './" +configname + ".properties"+ "' not found");
+        } catch (IOException e) {
+            log.error("Load config file './" +configname + ".properties"+ "' error", e);
+        }
+        if (profile != null) {
+            String fName = configname + "-" + profile + ".properties";
+            try (InputStream is = new FileInputStream(fName)) {
+                Properties p = new Properties();
+                p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+                p.forEach((k, v) -> result.put(k.toString(), v));
+            } catch (FileNotFoundException e) {
+                log.trace("Load config file './" +fName+ "' not found");
+            } catch (IOException e) {
+                log.error("Load config file './" +fName+ "' error", e);
+            }
+        }
+        //3. configdir
+        if (configdir != null) {
+            File targetFile = new File(configdir, configname + ".properties");
+            try (InputStream is = new FileInputStream(targetFile)) {
+                Properties p = new Properties();
+                p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+                p.forEach((k, v) -> result.put(k.toString(), v));
+            } catch (FileNotFoundException e) {
+                log.trace("Load config file '" +targetFile.getAbsolutePath()+ "' not found");
+            } catch (IOException e) {
+                log.error("Load config file '" +targetFile.getAbsolutePath()+ "' error", e);
+            }
+            if (profile != null) {
+                targetFile = new File(configdir, configname + "-" + profile + ".properties");
+                try (InputStream is = new FileInputStream(targetFile)) {
+                    Properties p = new Properties();
+                    p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+                    p.forEach((k, v) -> result.put(k.toString(), v));
+                } catch (FileNotFoundException e) {
+                    log.trace("Load config file '" +targetFile.getAbsolutePath()+ "' not found");
+                } catch (IOException e) {
+                    log.error("Load config file '" +targetFile.getAbsolutePath()+ "' error", e);
+                }
+            }
+        }
+        customEnv(result);
 
-        new Runnable() { // 替换 ${}
-            Pattern pattern = Pattern.compile("(\\$\\{(?<attr>[\\w\\._]+)\\})+");
-            AtomicInteger count = new AtomicInteger(0);
+        // 替换 ${}
+        new Runnable() {
+            final Pattern pattern = Pattern.compile("(\\$\\{(?<attr>[\\w\\._]+)\\})+");
+            final AtomicInteger count = new AtomicInteger(0);
             @Override
             public void run() {
                 if (count.getAndIncrement() >= 3) return;
@@ -218,7 +280,6 @@ public class AppContext {
 
     /**
      * 启动
-     * @return {@link AppContext}
      */
     public AppContext start() {
         log.info("Starting Application with PID {}, active profile: {}", Utils.pid(), getProfile());
@@ -408,7 +469,6 @@ public class AppContext {
      * @return {@link Executor}
      */
     protected Executor wrapExecForSource(Object source) {
-        log.trace("wrapExecForSource: {}", source);
         return new ExecutorService() {
             @Override
             public void shutdown() {}
@@ -458,7 +518,6 @@ public class AppContext {
      * @return {@link EP}
      */
     protected EP wrapEpForSource(Object source) {
-        log.trace("wrapEpForSource: {}", source);
         return new EP() {
             @Override
             protected void init(Executor exec, Logger log) {}
@@ -490,6 +549,13 @@ public class AppContext {
             public String toString() { return "wrappedCoreEp: " + source; }
         };
     }
+
+
+    /**
+     * 额外自定义环境配置
+     * @param already 已加载的属性集
+     */
+    protected void customEnv(Map<String, Object> already) { }
 
 
     /**

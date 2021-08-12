@@ -30,46 +30,9 @@ public class AppTest {
                 log.info("{} ========= {}", name, server1.getName());
             }
         });
-        app.addSource(new ServerTpl("web") { //添加http服务
-            HttpServer server;
-            @EL(name = "sys.starting", async = true)
-            void start() {
-                server = new HttpServer(app.attrs(name), exec());
-                server.buildChain(chain -> {
-                    chain.get("get", hCtx -> {
-                        hCtx.render("xxxxxxxxxxxx");
-                    });
-                }).start();
-            }
-            @EL(name = "sys.stop")
-            void stop() { if (server != null) server.stop(); }
-        });
-        app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
-            Repo repo;
-            @EL(name = "sys.starting", async = true)
-            void start() {
-                repo = new Repo(attrs()).init();
-                exposeBean(repo);
-                log.info(repo.firstRow("select count(1) as total from test").get("total").toString());
-                ep.fire(name + ".started");
-            }
-
-            @EL(name = "sys.stopping", async = true, order = 2f)
-            void stop() { if (repo != null) repo.close(); }
-        });
-        app.addSource(new ServerTpl("sched") { // 定时任务
-            Sched sched;
-            @EL(name = "sys.starting", async = true)
-            void start() {
-                sched = new Sched(attrs(), exec()).init();
-                exposeBean(sched);
-                ep.fire(name + ".started");
-            }
-            @EL(name = "sched.after")
-            void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
-
-            void stop() { if (sched != null) sched.stop(); }
-        });
+        addWeb(app);
+        addSched(app);
+        addJpa(app);
         app.addSource(new ServerTpl("remoter") {
             Remoter remoter;
             @EL(name = "sched.started")
@@ -89,8 +52,79 @@ public class AppTest {
             void stop() { remoter.stop(); }
         });
         app.start();
+        Thread.sleep(1000 * 60 * 10);
     }
 
+    /**
+     * 创建数据库操作
+     */
+    static void addJpa(AppContext app) {
+        app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
+            Repo repo;
+            @EL(name = "sys.starting", async = true)
+            void start() {
+                repo = new Repo(attrs()).init();
+                exposeBean(repo);
+                ep.fire(name + ".started");
+            }
+
+            @EL(name = "sys.stopping", async = true, order = 2f)
+            void stop() { if (repo != null) repo.close(); }
+        });
+    }
+
+
+    /**
+     * 创建 web服务
+     */
+    static void addWeb(AppContext app) {
+        app.addSource(
+                new ServerTpl("web") { //添加http服务
+                    HttpServer server;
+
+                    @EL(name = "sys.starting", async = true)
+                    void start() {
+                        server = new HttpServer(app.attrs(name), exec());
+                        server.buildChain(chain -> {
+                            chain.get("test", hCtx -> hCtx.render("xxxxxx"));
+                        });
+                        server.start();
+                        server.enabled = false;
+                    }
+
+                    @EL(name = "sys.started", async = true)
+                    void started() {
+                        for (Object ctrl : server.getCtrls()) exposeBean(ctrl);
+                        server.enabled = true;
+                    }
+
+                    @EL(name = "sys.stop")
+                    void stop() { if (server != null) server.stop(); }
+                }
+        );
+    }
+
+
+    /**
+     * 添加时间调度服务
+     */
+    static void addSched(AppContext app) {
+        app.addSource(new ServerTpl("sched") { // 定时任务
+            Sched sched;
+            @EL(name = "sys.starting", async = true)
+            void start() {
+                sched = new Sched(attrs(), exec()).init();
+                exposeBean(sched);
+                ep.fire(name + ".started");
+            }
+
+            @EL(name = "sched.after")
+            void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
+
+            @EL(name = "sys.stopping", async = true)
+            void stop() { if (sched != null) sched.stop(); }
+        });
+    }
 
     @Test
     void sysLoadTest() throws Exception {

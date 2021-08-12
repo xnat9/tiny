@@ -24,6 +24,8 @@
 		</rollingPolicy>
 	</appender>
 
+	<logger name="cn.xnatural.app" level="info"></logger>
+
 	<root level="INFO">
 		<appender-ref ref="console"/>
 		<!--		<appender-ref ref="file"/>-->
