@@ -160,7 +160,7 @@ public class ServerTpl {
      */
     protected ServerTpl exposeBean(Object bean, String...names) {
         if (bean == null) return this;
-        if (beanCtx == null) beanCtx = new HashMap<>();
+        if (beanCtx == null) beanCtx = new HashMap<>(7);
         if (names == null || names.length < 1) {
             names = new String[]{
                     bean.getClass().getName().contains("$") ? bean.getClass().getName().replace("$", "_") : bean.getClass().getSimpleName()

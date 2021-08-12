@@ -45,10 +45,6 @@ public class AppContext {
      */
     public final           Date                  startup      = new Date();
     /**
-     * 系统负载值 0 - 10
-     */
-    private                Integer               sysLoad      = 0;
-    /**
      * jvm关闭钩子. kill
      * System.exit(0)
      */
@@ -81,10 +77,7 @@ public class AppContext {
                     }
                 }
         ) {
-//            @Override
-//            protected void beforeExecute(Thread t, Runnable r) { super.beforeExecute(t, r); populateLoad(); }
-
-            @Override
+             @Override
             public void execute(Runnable fn) {
                 try {
                     super.execute(fn);
@@ -92,31 +85,6 @@ public class AppContext {
                     log.warn("Thread pool rejected new task very heavy load. {}", this);
                 } catch (Throwable t) {
                     log.error("Task Error", t);
-                }
-            }
-
-            int gap1 = getCorePoolSize() / 3;
-            int gap2 = (getMaximumPoolSize() - getCorePoolSize()) / 3;
-
-            // 计算线程池负载
-            void populateLoad() {
-                int load = sysLoad;
-                int ac = getActiveCount();
-                int wait = 0;
-                if (getCorePoolSize() - ac > gap1 * 2) sysLoad = 2;
-                else if (getCorePoolSize() - ac > gap1) sysLoad = 3;
-                else if (getCorePoolSize() - ac > 0) sysLoad = 4;
-                else if (getCorePoolSize() == ac) sysLoad = 5;
-                else if ((wait = getQueue().size()) > 0) sysLoad = 6;
-                // 超过核心线程的线程数在工作
-                else if (getMaximumPoolSize() - ac > gap2 * 2) sysLoad = 7;
-                else if (getMaximumPoolSize() - ac > gap2) sysLoad = 8;
-                else if (getMaximumPoolSize() - ac > 0) sysLoad = 9;
-                else if (getMaximumPoolSize() == ac) sysLoad = 10;
-                if (sysLoad > 6 && load < sysLoad) {
-                    log.warn("App load up: {}, active: {}, wait: {}", sysLoad, ac, wait);
-                } else if (load > 6 && sysLoad < load) {
-                    log.info("App load down: {}, active: {}, wait: {}", sysLoad, ac, wait);
                 }
             }
         };
@@ -588,8 +556,7 @@ public class AppContext {
 
 
     /**
-     * getter
-     * @return profile
+     * get profile
      */
     public String getProfile() { return (String) env().get("profile"); }
 
@@ -607,11 +574,4 @@ public class AppContext {
      */
     protected final Lazier<String> _id = new Lazier<>(() -> getAttr("sys.id", String.class, Utils.random(10, name() + "_", null)));
     public String id() { return _id.get(); }
-
-
-    /**
-     * 负载值
-     * @return 1-10
-     */
-    // public Integer getSysLoad() { return sysLoad; }
 }
