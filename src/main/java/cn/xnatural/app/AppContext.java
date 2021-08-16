@@ -75,7 +75,8 @@ public class AppContext {
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "sys-" + i.getAndIncrement());
                     }
-                }
+                },
+                new ThreadPoolExecutor.CallerRunsPolicy()
         ) {
              @Override
             public void execute(Runnable fn) {
