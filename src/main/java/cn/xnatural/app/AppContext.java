@@ -82,8 +82,6 @@ public class AppContext {
             public void execute(Runnable fn) {
                 try {
                     super.execute(fn);
-                } catch (RejectedExecutionException ex) {
-                    log.warn("Thread pool rejected new task very heavy load. {}", this);
                 } catch (Throwable t) {
                     log.error("Task Error", t);
                 }
@@ -95,8 +93,8 @@ public class AppContext {
         return exec;
     });
     /**
-     * 线程池
-     * @return ExecutorService
+     * 系统线程池
+     * @return {@link ExecutorService}
      */
     public ExecutorService exec() { return _exec.get(); }
 
@@ -108,7 +106,7 @@ public class AppContext {
         EP ep = new EP(exec(), LoggerFactory.getLogger(EP.class)) {
             @Override
             protected Object doPublish(String eName, EC ec) {
-                if ("sys.starting".equals(eName) || "sys.stopping".equals(eName) || "sys.started".equals(eName)) {
+                if ("sys.inited".equals(eName) || "sys.starting".equals(eName) || "sys.stopping".equals(eName) || "sys.started".equals(eName)) {
                     if (ec.source() != AppContext.this) throw new UnsupportedOperationException("not allow fire event '" + eName + "'");
                 }
                 return super.doPublish(eName, ec);
@@ -127,7 +125,7 @@ public class AppContext {
     });
     /**
      * 事件中心
-     * @return EP
+     * @return {@link EP}
      */
     public EP ep() { return _ep.get(); }
 
@@ -242,7 +240,6 @@ public class AppContext {
     });
     /**
      * 环境属性配置
-     * @return map
      */
     public Map<String, Object> env() { return _env.get(); }
 

@@ -52,7 +52,6 @@ public class Utils {
     /**
      * 项目根目录下边找目录或文件
      * @param child 项目根目录下的子目录/文件
-     * @return File
      */
     public static File baseDir(String child) {
         File p = new File(System.getProperty("user.dir"));
@@ -63,7 +62,6 @@ public class Utils {
 
     /**
      * 本机ipv4地址
-     * @return ip
      */
     public static String ipv4() {
         try {
