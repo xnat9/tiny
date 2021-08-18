@@ -57,7 +57,7 @@ endif
 <dependency>
     <groupId>cn.xnatural.app</groupId>
     <artifactId>app</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
 </dependency>
 ```
 
@@ -546,9 +546,7 @@ Utils.toMapper(bean).showClassProp().build();
 
 [GRule](https://gitee.com/xnat/grule)
 
-# 1.0.7 ing
-- [x] feat: Devourer use last:队列最后任务有效
-- [x] refactor: 环境属性加载
+# 1.0.8 ing
 - [ ] CacheSrv accessTime
 
 # 参与贡献
