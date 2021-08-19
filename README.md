@@ -541,6 +541,11 @@ Utils.toMapper(bean).sort().build();
 Utils.toMapper(bean).showClassProp().build();
 ```
 
+## 文件内容监控器(类linux tail)
+```java
+Utils.tailer().tail("d:/tmp/tmp.json", 5);
+```
+
 ## 应用例子
 [Demo](https://gitee.com/xnat/appdemo)
 
