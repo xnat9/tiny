@@ -186,7 +186,7 @@ public class ServerTpl {
      * 线程池
      * @return {@link ExecutorService}
      */
-    public ExecutorService exec() { return _exec.get(); }
+    protected ExecutorService exec() { return _exec.get(); }
 
 
     /**
@@ -235,15 +235,15 @@ public class ServerTpl {
     }
 
 
-    public Long getLong(String key, Long defaultValue) { return getAttr(key, Long.class, defaultValue); }
+    protected Long getLong(String key, Long defaultValue) { return getAttr(key, Long.class, defaultValue); }
 
-    public Integer getInteger(String key, Integer defaultValue) { return getAttr(key, Integer.class, defaultValue); }
+    protected Integer getInteger(String key, Integer defaultValue) { return getAttr(key, Integer.class, defaultValue); }
 
-    public Double getDouble(String key, Double defaultValue) { return getAttr(key, Double.class, defaultValue); }
+    protected Double getDouble(String key, Double defaultValue) { return getAttr(key, Double.class, defaultValue); }
 
-    public Float getFloat(String key, Float defaultValue) { return getAttr(key, Float.class, defaultValue); }
+    protected Float getFloat(String key, Float defaultValue) { return getAttr(key, Float.class, defaultValue); }
 
-    public String getStr(String key, String defaultValue) { return getAttr(key, String.class, defaultValue); }
+    protected String getStr(String key, String defaultValue) { return getAttr(key, String.class, defaultValue); }
 
-    public Boolean getBoolean(String key, Boolean defaultValue) { return getAttr(key, Boolean.class, defaultValue); }
+    protected Boolean getBoolean(String key, Boolean defaultValue) { return getAttr(key, Boolean.class, defaultValue); }
 }
