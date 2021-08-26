@@ -552,6 +552,8 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 [GRule](https://gitee.com/xnat/grule)
 
 # 1.0.8 ing
+- [x] pref: ServerTpl some method should be protected
+- [x] feat: VChain: V型执行链路
 - [ ] CacheSrv accessTime
 
 # 参与贡献
