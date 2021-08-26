@@ -22,8 +22,10 @@ public class Lazier<T> implements Supplier<T> {
      * 清除
      */
     public void clear() {
-        once = false;
-        result = null;
+        synchronized (this) {
+            once = false;
+            result = null;
+        }
     }
 
 
@@ -39,6 +41,13 @@ public class Lazier<T> implements Supplier<T> {
         }
         return result;
     }
+
+
+    /**
+     * 是否已执行
+     */
+    public boolean done() { return once; }
+
 
     @Override
     public String toString() { return result == null ? null : result.toString(); }
