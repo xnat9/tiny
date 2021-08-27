@@ -1,7 +1,10 @@
 # 介绍
 轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet)
 
-> 系统只一个公用线程池: 所有的执行都被抽象成Runnable加入到公用线程池中执行
+> 线程池设计为两级线程池
+> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
+>
+> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
 
 > 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
 
@@ -47,10 +50,21 @@ else
     :任务 n;
   end fork
 endif
-:线程池;
+
+if (系统线程池是否空闲) then (闲)
+  :系统线程池;
+  kill
+else (忙)
+  :服务本地线程池;
+  note right
+    自动适配创建
+  end note
+  kill
+endif
 @enduml
 -->
-![Image text](http://www.plantuml.com/plantuml/png/fPBFIiD04CRl-nHpR0z1scCMIa5z0JsAXoqxDKktioNPA7q3_oYj9oc8M13iGH0lGjk3BzDDVGmt9gAY1C7JPBxloszsbcqdLiGsxMkMz1GDH2pwi6b8AgiCRPFSjKED46b5o9A1LfO1GB0NAIcHzeDMteRPzOKxdKA35n4G1q9HHR3vro1nXYIX6CnK5sghvT8RjPsKI7GqrkjW8oIekSUvExxAJkvVf-TkCjjmunitUV1VTS_hchYNOo5eWPi_kz4byFS-tC93ayOOGwCK367G6GQ-y8y_ij5ujRW3NeBAGrVZcgLWZqoEy-LVE2e5oc7q6mf95ckYJl3hoc5nOz3uCV3JQrPuz9rEKdKP2zUBb_NiB7kwvQpjDVz-tW00)
+![Image text](http://www.plantuml.com/plantuml/png/fPBDQk9G5CVtUOgpZ8imwDA023Fp0ZFBOHQHNCt5wuaarndS3GEbrbQqAokLja9fRH7i1nHC5hwCDz6twCr7e1QHGbVdtdF--Pt_oRbbbniERpMOujOfDWt7QC1N6qtAgOtVqVp9suo0nIWInMqooXK0q7vPr3G9_jPAqRKOZ7kYEu6ydaZ0g1aKzmWB7nMYhX0q8Mciq2geAz-N1VL72z6eC9BB0RS8WYhc2z4P1aUtwyc964s_YC656CtaAITvLTkfHrZGIY0MBw9_2dfyBtuZV-oMGnp8fmaRYLPfQpBesHT1Vx3oha5FGPdflRX2ck1_xGWdmwTmc2OmWk4k544p6PCmbxmTkPZyCSZlQ9ZL2djgk4r7arQJJOJFVkXVXjuod1u7ZrV1sLmCRi8xRpDyofOI7HM9UYUDY7NAMEmLLB4SILMsys0y4-E7BItQd813QnQFdQqFxqLtkldtVtFG4vrpuNk9mrYNeHEZPHdastu5)
+
 
 # 安装教程
 ```xml
@@ -62,7 +76,7 @@ endif
 ```
 
 # 系统事件
-+ sys.inited:  应用始化完成(环境配置, 系统线程池, 事件中心)
++ sys.inited: 应用始化完成(环境配置, 系统线程池, 事件中心)
 + sys.starting: 通知所有服务启动. 一般为ServerTpl
 + sys.started: 应用启动完成
 + sys.stopping: 应用停止事件(kill pid)
@@ -84,6 +98,9 @@ app.addSource(new TestService()); // 添加自定义服务
 app.start(); // 应用启动
 ```
 
+> 基于事件环型框架结构图
+> 
+> > 以AppContext#EP为事件中心挂载服务结构
 <!--
 @startuml
 class AppContext {
@@ -554,6 +571,7 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 # 1.0.8 ing
 - [x] pref: ServerTpl some method should be protected
 - [x] feat: VChain: V型执行链路
+- [x] feat: 两级线程执行模型
 - [ ] CacheSrv accessTime
 
 # 参与贡献

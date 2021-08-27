@@ -64,9 +64,10 @@ public class AppContext {
      */
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ...");
-        Integer maxSize = getAttr("sys.exec.maximumPoolSize", Integer.class, 32);
-        ThreadPoolExecutor exec = new ThreadPoolExecutor(
-                getAttr("sys.exec.corePoolSize", Integer.class, 8), maxSize,
+        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, 8);
+        Integer maximumPoolSize = getAttr("sys.exec.maximumPoolSize", Integer.class, 32);
+        if (maximumPoolSize < corePoolSize) maximumPoolSize = corePoolSize;
+        final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
                 getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
                 new LinkedBlockingQueue<>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)),
                 new ThreadFactory() {
@@ -83,7 +84,7 @@ public class AppContext {
                 try {
                     super.execute(fn);
                 } catch (Throwable t) {
-                    log.error("Task Error", t);
+                    log.error("sys task error", t);
                 }
             }
         };
@@ -431,49 +432,96 @@ public class AppContext {
 
     /**
      * 为 source 包装 Executor
+     * 当系统线程池忙的时候, 会为创建服务创建一个独用的线程池:
+     *      抵御流量突发,同时保证各个业务的任务隔离(即使流量突发也不会影响其他业务导致整个系统被拖垮),
+     *      另外还可以抵御线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
+     * 分发新任务策略: 当系统线程池忙, 则使用服务自己的线程池; 默认都用系统线程池
      * @param source 源对象
      * @return {@link Executor}
      */
     protected Executor wrapExecForSource(Object source) {
         return new ExecutorService() {
+            protected final Lazier<ThreadPoolExecutor> _localExec = new Lazier<>(() -> {
+                if (!(source instanceof ServerTpl)) return _exec.get();
+                log.info("init '{}' executor ...", ((ServerTpl) source).name);
+                Integer corePoolSize = ((ServerTpl) source).getAttr("exec.corePoolSize", Integer.class, 4);
+                Integer maximumPoolSize = ((ServerTpl) source).getAttr("exec.maximumPoolSize", Integer.class, 8);
+                if (maximumPoolSize < corePoolSize) maximumPoolSize = corePoolSize;
+                final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
+                        ((ServerTpl) source).getAttr("exec.keepAliveTime", Long.class, 2L), TimeUnit.HOURS,
+                        new LinkedBlockingQueue<>(((ServerTpl) source).getAttr("exec.queueCapacity", Integer.class, 10000)),
+                        new ThreadFactory() {
+                            final AtomicInteger i = new AtomicInteger(1);
+                            @Override
+                            public Thread newThread(Runnable r) {
+                                return new Thread(r, ((ServerTpl) source).name + "-" + i.getAndIncrement());
+                            }
+                        },
+                        new ThreadPoolExecutor.CallerRunsPolicy()
+                ) {
+                    @Override
+                    public void execute(Runnable fn) {
+                        try {
+                            super.execute(fn);
+                        } catch (Throwable t) {
+                            log.error(((ServerTpl) source).name + " task error", t);
+                        }
+                    }
+                };
+                if (((ServerTpl) source).getAttr("exec.allowCoreThreadTimeOut", Boolean.class, true)) {
+                    exec.allowCoreThreadTimeOut(true);
+                }
+                // 动态添加 系统事件: 关闭线程池
+                ep().listen("sys.stopping", () -> exec.shutdown(), true);
+                return exec;
+            });
+
+            protected final int threshold = getAttr("sys.exec.useLocalExecThreshold", Integer.class, 0);
+            protected ExecutorService getExec() {
+                int waiting = _exec.get().getQueue().size();
+                // 主线程池忙,并且相对本地线程池更忙 才用本地线程池
+                if (waiting > threshold && _localExec.get().getQueue().size() < waiting) return _localExec.get();
+                return _exec.get();
+            }
+
             @Override
             public void shutdown() {}
             @Override
             public List<Runnable> shutdownNow() { return emptyList(); }
             @Override
-            public boolean isShutdown() { return exec().isShutdown(); }
+            public boolean isShutdown() { return getExec().isShutdown(); }
             @Override
-            public boolean isTerminated() { return exec().isTerminated(); }
+            public boolean isTerminated() { return getExec().isTerminated(); }
             @Override
             public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-                return exec().awaitTermination(timeout, unit);
+                return getExec().awaitTermination(timeout, unit);
             }
             @Override
-            public <T> Future<T> submit(Callable<T> task) { return exec().submit(task); }
+            public <T> Future<T> submit(Callable<T> task) { return getExec().submit(task); }
             @Override
-            public <T> Future<T> submit(Runnable task, T result) { return exec().submit(task, result); }
+            public <T> Future<T> submit(Runnable task, T result) { return getExec().submit(task, result); }
             @Override
-            public Future<?> submit(Runnable task) { return exec().submit(task); }
+            public Future<?> submit(Runnable task) { return getExec().submit(task); }
             @Override
             public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-                return exec().invokeAll(tasks);
+                return getExec().invokeAll(tasks);
             }
             @Override
             public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-                return exec().invokeAll(tasks, timeout, unit);
+                return getExec().invokeAll(tasks, timeout, unit);
             }
             @Override
             public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-                return exec().invokeAny(tasks);
+                return getExec().invokeAny(tasks);
             }
             @Override
             public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                return exec().invokeAny(tasks, timeout, unit);
+                return getExec().invokeAny(tasks, timeout, unit);
             }
             @Override
-            public void execute(Runnable cmd) { exec().execute(cmd); }
-            public int getCorePoolSize() { return _exec.get().getCorePoolSize(); }
-            public int getWaitingCount() { return _exec.get().getQueue().size(); }
+            public void execute(Runnable cmd) { getExec().execute(cmd); }
+            public int getCorePoolSize() { return _exec.get().getCorePoolSize() + (_localExec.done() ? _localExec.get().getCorePoolSize() : 0); }
+            public int getWaitingCount() { return _exec.get().getQueue().size() + (_localExec.done() ? _localExec.get().getQueue().size() : 0); }
         };
     }
 

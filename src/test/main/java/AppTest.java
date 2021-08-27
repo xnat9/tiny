@@ -1,16 +1,22 @@
 import cn.xnatural.app.AppContext;
 import cn.xnatural.app.ServerTpl;
+import cn.xnatural.enet.event.EC;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.http.HttpServer;
 import cn.xnatural.jpa.Repo;
 import cn.xnatural.remoter.Remoter;
 import cn.xnatural.sched.Sched;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AppTest {
+
+    static final Logger log = LoggerFactory.getLogger(AppTest.class);
 
     @Test
     void appTest() throws Exception {
@@ -51,7 +57,9 @@ public class AppTest {
             @EL(name = "sys.stopping", async = true)
             void stop() { remoter.stop(); }
         });
+        app.addSource(this);
         app.start();
+        //testServerExec();
         Thread.sleep(1000 * 60 * 10);
     }
 
@@ -125,6 +133,27 @@ public class AppTest {
             void stop() { if (sched != null) sched.stop(); }
         });
     }
+
+
+    /**
+     * 测试服务本地线程池
+     */
+    @EL(name = "sys.started", async = true)
+    void testServerExec(EC ec) {
+        AppContext app = (AppContext) ec.source();
+        AtomicInteger cnt = new AtomicInteger();
+        app.bean(Sched.class, null).fixedDelay(Duration.ofSeconds(5), () -> {
+            app.exec().execute(() -> {
+                try {
+                    Thread.sleep(1000 * 20);
+                    log.info("===== " + cnt.incrementAndGet() + ", " + app.exec().toString());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        });
+    }
+
 
     @Test
     void sysLoadTest() throws Exception {
