@@ -472,7 +472,7 @@ public class AppContext {
                     exec.allowCoreThreadTimeOut(true);
                 }
                 // 动态添加 系统事件: 关闭线程池
-                ep().listen("sys.stopping", () -> exec.shutdown(), true);
+                ep().listen("sys.stopping", () -> exec.shutdown(), true, 1, -1);
                 return exec;
             });
 
@@ -489,9 +489,9 @@ public class AppContext {
             @Override
             public List<Runnable> shutdownNow() { return emptyList(); }
             @Override
-            public boolean isShutdown() { return getExec().isShutdown(); }
+            public boolean isShutdown() { return _exec.get().isShutdown() && (!_localExec.done() || _localExec.get().isShutdown()); }
             @Override
-            public boolean isTerminated() { return getExec().isTerminated(); }
+            public boolean isTerminated() { return _exec.get().isTerminated() && (!_localExec.done() || _localExec.get().isTerminated()); }
             @Override
             public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
                 return getExec().awaitTermination(timeout, unit);

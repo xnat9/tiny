@@ -1,14 +1,13 @@
 # 介绍
-轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet)
+轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet) 事件环型框架结构
 
-> 线程池设计为两级线程池
-> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
->
-> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
+之所以写这个框架是因为目前现有的java框架都多少比较复杂
+,对java写法, 框架设计, 功能实现等有一些自己的拙见
+,所以一直想写一个java框架来体现框架的本身一些新的思考
 
-> 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
+<!-- 框架一直坚持简单原则. 源码简单, 结构简单, 使用简单, 通俗易懂是这个框架的追求
+-->
 
-> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
 
 <!--
 @startuml
@@ -65,6 +64,14 @@ endif
 -->
 ![Image text](http://www.plantuml.com/plantuml/png/fPBDQk9G5CVtUOgpZ8imwDA023Fp0ZFBOHQHNCt5wuaarndS3GEbrbQqAokLja9fRH7i1nHC5hwCDz6twCr7e1QHGbVdtdF--Pt_oRbbbniERpMOujOfDWt7QC1N6qtAgOtVqVp9suo0nIWInMqooXK0q7vPr3G9_jPAqRKOZ7kYEu6ydaZ0g1aKzmWB7nMYhX0q8Mciq2geAz-N1VL72z6eC9BB0RS8WYhc2z4P1aUtwyc964s_YC656CtaAITvLTkfHrZGIY0MBw9_2dfyBtuZV-oMGnp8fmaRYLPfQpBesHT1Vx3oha5FGPdflRX2ck1_xGWdmwTmc2OmWk4k544p6PCmbxmTkPZyCSZlQ9ZL2djgk4r7arQJJOJFVkXVXjuod1u7ZrV1sLmCRi8xRpDyofOI7HM9UYUDY7NAMEmLLB4SILMsys0y4-E7BItQd813QnQFdQqFxqLtkldtVtFG4vrpuNk9mrYNeHEZPHdastu5)
 
+> 框架提供自适应线程池管理, 解决多线程管理问题: 设计了两级线程池(系统线程池,服务本地线程池)
+> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
+>
+> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
+
+> 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
+
+> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
 
 # 安装教程
 ```xml
@@ -74,12 +81,6 @@ endif
     <version>1.0.7</version>
 </dependency>
 ```
-
-# 系统事件
-+ sys.inited: 应用始化完成(环境配置, 系统线程池, 事件中心)
-+ sys.starting: 通知所有服务启动. 一般为ServerTpl
-+ sys.started: 应用启动完成
-+ sys.stopping: 应用停止事件(kill pid)
 
 # 可搭配其它服务
 [http](https://gitee.com/xnat/http), [jpa](https://gitee.com/xnat/jpa),
@@ -95,7 +96,7 @@ app.addSource(new ServerTpl("server1") { // 添加服务 server1
     }
 });
 app.addSource(new TestService()); // 添加自定义服务
-app.start(); // 应用启动
+app.start(); // 应用启动(会依次触发系统事件)
 ```
 
 > 基于事件环型框架结构图
@@ -222,8 +223,32 @@ class Server3  {
 
 ![Image text](http://www.plantuml.com/plantuml/png/vLJDJjjE7BpxANw2Iw9_Y0JS0dz4ItEeH5LKZbKF9ju4LuutjHqKH960a0gIK884z8EK3wGsaI1y50aARiJBPDVXBRhs6kDGe4YLUk6stfsPdPsTTRzkY9gHJYf2J15r7HwbKWDODL36W0a1e3qw12Xb3vw9gTvXGvFLH0YUZxn6CQCFT9pMOeYjN0SyGMDi2Mbzy2QDqaWN6E0_KPA67KA0yrrwq5vpN0I2mgGWgDX0eA2u0JZkinE9E3uQPuM6UTpuKIFdMG6f4jXmbwJ9YT7VM7wFT7wAbkURsplqn2JvJUlpx33Inf3c2TsnEp-8NuHpsvq5eAkddYW3aVrJClU1pbUQMqNogNelfru-ZC-rQ7c1vBVkuyx9J-WCGxFoZImkyPH07zV3iYeRI0BhoBJCZOlSWbNVOyhDUfti5UbSAGJMsRbLBT33pL1Bk6Jk2waKI76Ld7pdKA7h1dbdOtRdq3p8MijL7WxtpSQac2EbdVxeO40LamZ-XpO_foq8B2rhROcKTbb8TeH7Aq9tk5MOIt8K3vJR8QNtpBnPiSmQTtL5Gv9x55zqlDxH8LxhYRYC56aI_AKTb7K3gNPf5PtDzzYzd4WYOnGpO5pMK80ZNMrIMhXy2U5mc2pEq9M3OC_r1hCT8n55z_Vlwi0VDyd1R0H8xgWvlSnIuWdSKXOkPVlmdW4_jm_lUxszRpiw64E83l4XRsidH80k7r-ilVDSN4Dq_H7HVGF2pTVRnGxPJgMqJ_9L3cEVRFBsBh35CInBSFah070rfikqjdst1awbMZNO39Dm1NB7P2zxcq0cuz2yYtRucSmLU-ECbdT9VgEPhTjiFtO4YMfWm3wuCxGEJR9U206lYJF5IXBqK_Z_q2sI-vTmYlGYhQhY25AWOPhixRIIH7rSZGKuH450VixGsjURW0bal7og6YY1DDPdRBVwCSOAC-AuUkLjVBXEfogEkSdMg-k2lx-x-mMFSMlmhZMC7shqtKpj7vLU55kp5yK757e_KgLqKla5)
 
-## 添加http服务
-> web.hp=:8080
+## 系统事件: app.start() 后会依次触发 sys.inited, sys.starting, sys.started
++ sys.inited: 应用始化完成(环境配置, 系统线程池, 事件中心)
++ sys.starting: 通知所有服务启动. 一般为ServerTpl
++ sys.started: 应用启动完成
++ sys.stopping: 应用停止事件(kill pid)
+
+## 环境配置
+>+ 系统属性(-Dconfigname): configname 指定配置文件名. 默认:app
+>+ 系统属性(-Dprofile): profile 指定启用特定的配置
+>+ 系统属性(-Dconfigdir): configdir 指定额外配置文件目录
+
+* 只读取properties文件. 按顺序读取app.properties, app-[profile].properties 两个配置文件
+* 配置文件支持简单的 ${} 属性替换
+
+  > 加载顺序(优先级从低到高):
+  * classpath:app.properties, classpath:app-[profile].properties
+  * file:./app.properties, file:./app-[profile].properties
+  * configdir:app.properties, configdir:app-[profile].properties
+  * 自定义环境配置(重写方法): AppContext#customEnv(Map)
+  * System.getProperties()
+
+## 添加 [http](https://gitee.com/xnat/http) 服务
+```properties
+### app.propertiees
+web.hp=:8080
+```
 ```java
 app.addSource(new ServerTpl("web") { //添加web服务
     HttpServer server;
@@ -243,8 +268,11 @@ app.addSource(new ServerTpl("web") { //添加web服务
 });
 ```
 
-## 添加jpa
-> jpa_local.url=jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root
+## 添加 [jpa](https://gitee.com/xnat/jpa)
+```properties
+### app.properties
+jpa_local.url=jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root
+```
 ```java
 app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
     Repo repo;
@@ -260,6 +288,26 @@ app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
 });
 ```
 
+## 动态添加服务
+```java
+@EL(name = "sys.inited")
+void sysInited() {
+    if (!app.attrs("redis").isEmpty()) { //根据配置是否有redis,创建redis客户端工具
+        app.addSource(new RedisClient())
+    }
+}
+```
+
+## 系统心跳
+> 需要用 [sched](https://gitee.com/xnat/sched) 添加 _sched.after_ 事件监听
+```java
+@EL(name = "sched.after")
+void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
+```
+> 每隔一段时间触发一次心跳, 1~4分钟(两个配置相加)随机心跳
+> + 配置(sys.heartbeat.minInterval) 控制心跳最小时间间隔
+> + 配置(sys.heartbeat.randomInterval) 控制心跳最大时间间隔
+
 ## 服务基础类: ServerTpl
 > 推荐所有被加入到AppContext中的服务都是ServerTpl的子类
 ```java
@@ -271,18 +319,74 @@ app.addSource(new ServerTpl("服务名") {
     }
 })
 ```
-### 依赖注入
-> 每个服务都是一个bean容器, AppContext是全局bean容器
-* 暴露一个bean对象
+
+### bean注入:按类型匹配 @Inject
+```java
+app.addSource(new ServerTpl() {
+    @Inject Repo repo;  //自动注入, 按类型
+
+    @EL(name = "sys.started", async = true)
+    void init() {
+        List<Map> rows = repo.rows("select * from test")
+        log.info("========= {}", rows);
+    }
+});
+```
+
+### bean注入:按类型和名字全匹配 @Named
+```java
+app.addSource(new ServerTpl("testNamed") {
+    @Named ServerTpl server1; //自动注入, 按类型和名字
+
+    @EL(name = "sys.started", async = true)
+    void init() {
+        log.info("{} ========= {}", name, server1.getName());
+    }
+});
+```
+
+### 动态bean获取: 方法 bean(Class bean类型, String bean名字)
+```java
+app.addSource(new ServerTpl() {
+    @EL(name = "sys.started", async = true)
+    void start() {
+        String str = bean(Repo).firstRow("select count(1) as total from test").get("total").toString()；
+        log.info("=========" + str);
+    }
+});
+```
+
+### bean依赖注入原理
+> 两种bean容器: AppContext是全局bean容器, 每个服务(ServerTpl)都是一个bean容器
+> > 获取bean对象: 先从全局查找, 再从每个服务中获取
+
+* 暴露全局bean
+  ```java
+  app.addSource(new TestService());
+  ```
+* 服务(ServerTpl)里面暴露自己的bean
   ```java
   Repo repo = new Repo("jdbc:mysql://localhost:3306/test?user=root&password=root").init();
-  exposeBean(repo);
+  exposeBean(repo); // 加入到bean容器,暴露给外部使用
   ```
-* 获取bean对象: 先从全局查找, 再从每个服务中获取
-  ```java
-    bean(Repo).firstRow("select count(1) as total from db").get("total")
-  ```
-### 异步任务
+
+### 属性直通车
+> 服务(ServerTpl)提供便捷方法获取配置.包含: getLong, getInteger, getDouble, getBoolean等
+```properties
+## app.properties
+testSrv.prop1=1
+testSrv.prop2=2.2
+```
+```java
+app.addSource(new ServerTpl("testSrv") {
+    @EL(name = "sys.starting")
+    void init() {
+        log.info("print prop1: {}, prop2: {}", getInteger("prop1"), getDouble("prop2"));    
+    }
+})
+```
+
+### 提交异步任务
 ```java
 async(() -> {
     // 异步执行任务
@@ -295,71 +399,13 @@ queue("toEs", () -> {
 })
 ```
 
-## 动态添加服务
-```java
-@EL(name = "sys.inited")
-void sysInited() {
-    if (!app.attrs("redis").isEmpty()) { //根据配置是否有redis,创建redis客户端工具
-        app.addSource(new RedisClient())
-    }
-}
-```
-
-## 系统心跳
-> 需要用 [sched](https://gitee.com/xnat/sched) 添加监听
-```java
-@EL(name = "sched.after")
-void after(Duration duration, Runnable fn) {sched.after(duration, fn);}
-```
-> 每隔一段时间触发一次心跳, 1~4分钟随机心跳
-> + 配置(sys.heartbeat.minInterval) 控制心跳最小时间间隔
-> + 配置(sys.heartbeat.randomInterval) 控制心跳最大时间间隔
-
-## bean注入
-```java
-app.addSource(new ServerTpl() {
-    @Named ServerTpl server1; //自动注入, 按类型和名字
-    @Inject Repo repo;  //自动注入, 按类型
-
-    @EL(name = "sys.started", async = true)
-    void init() {
-        log.info("{} ========= {}", name, server1.getName());
-    }
-});
-```
-
-## 动态bean获取
-```java
-app.addSource(new ServerTpl() {
-    @EL(name = "sys.started", async = true)
-    void start() {
-        log.info(bean(Repo).firstRow("select count(1) as total from test").get("total").toString());
-    }
-});
-```
-
-## 环境配置
->+ 系统属性(-Dconfigname): configname 指定配置文件名. 默认:app
->+ 系统属性(-Dprofile): profile 指定启用特定的配置
->+ 系统属性(-Dconfigdir): configdir 指定额外配置文件目录
-
-* 只读取properties文件. 按顺序读取app.properties, app-[profile].properties 两个配置文件
-* 配置文件支持简单的 ${} 属性替换
-  
-  > 加载顺序(优先级从小到大):
-  * classpath:app.properties, classpath:app-[profile].properties
-  * file:./app.properties, file:./app-[profile].properties
-  * configdir:app.properties, configdir:app-[profile].properties
-  * 自定义环境配置: AppContext#customEnv(Map)
-  * System.getProperties()
-
 ## 对列执行器/并发控制器 Devourer
 > 当需要控制任务最多 一个一个, 两个两个... 的执行时
+>
+> > 服务基础类(ServerTpl)提供方法: queue
 
-> + 服务基础类(ServerTpl)提供方法: queue
-
+### 创建对列执行器
 ```java
-// 初始化一个 save 对列执行器
 queue("save")
     .failMaxKeep(10000) // 最多保留失败的任务个数, 默认不保留
     .parallel(2) // 最多同时执行任务数, 默认1(one-by-one)
@@ -367,16 +413,18 @@ queue("save")
         // 当任务执行抛错时执行
     };
 ```
+### 添加任务到队列
 ```java
-// 添加任务执行, 方法1
+// 方法1
 queue("save", () -> {
     // 执行任务
 });
-// 添加任务执行, 方法2
+// 方法2
 queue("save").offer(() -> {
     // 执行任务
 });
 ```
+### 队列控制: 暂停/恢复
 ```java
 // 暂停执行, 一般用于发生错误时
 // 注: 必须有新的任务入对, 重新触发继续执行. 或者resume方法手动恢复执行
@@ -389,6 +437,7 @@ queue("save")
         // me.suspend(queue -> true);
     };
 ```
+### 队列最后任务有效
 ```java
 // 是否只使用队列最后一个, 清除队列前面的任务
 // 适合: 入队的频率比出队高, 前面的任务可有可无
@@ -417,52 +466,58 @@ if (lock.tryLock()) { // 尝试获取一个锁
 ## 无限递归优化实现 Recursion
 > 解决java无尾递归替换方案. 例:
   ```java
-    System.out.println(factorialTailRecursion(1, 10_000_000).invoke());
+  System.out.println(factorialTailRecursion(1, 10_000_000).invoke());
   ```
   ```java
-      /**
-       * 阶乘计算
-       * @param factorial 当前递归栈的结果值
-       * @param number 下一个递归需要计算的值
-       * @return 尾递归接口,调用invoke启动及早求值获得结果
-       */
-      Recursion<Long> factorialTailRecursion(final long factorial, final long number) {
-          if (number == 1) {
-              // new Exception().printStackTrace();
-              return Recursion.done(factorial);
-          }
-          else {
-              return Recursion.call(() -> factorialTailRecursion(factorial + number, number - 1));
-          }
+  /**
+   * 阶乘计算
+   * @param factorial 当前递归栈的结果值
+   * @param number 下一个递归需要计算的值
+   * @return 尾递归接口,调用invoke启动及早求值获得结果
+   */
+  Recursion<Long> factorialTailRecursion(final long factorial, final long number) {
+      if (number == 1) {
+          // new Exception().printStackTrace();
+          return Recursion.done(factorial);
       }
+      else {
+          return Recursion.call(() -> factorialTailRecursion(factorial + number, number - 1));
+      }
+  }
   ```
 > 备忘录模式:提升递归效率. 例:
   ```java
-    System.out.println(fibonacciMemo(47));
+  System.out.println(fibonacciMemo(47));
   ```
   ```java
-    /**
-     * 使用同一封装的备忘录模式 执行斐波那契策略
-     * @param n 第n个斐波那契数
-     * @return 第n个斐波那契数
-     */
-    long fibonacciMemo(long n) {
-          return Recursion.memo((fib, number) -> {
-              if (number == 0 || number == 1) return 1L;
-              return fib.apply(number-1) + fib.apply(number-2);
-          }, n);
-    }
+  /**
+   * 使用同一封装的备忘录模式 执行斐波那契策略
+   * @param n 第n个斐波那契数
+   * @return 第n个斐波那契数
+   */
+  long fibonacciMemo(long n) {
+      return Recursion.memo((fib, number) -> {
+          if (number == 0 || number == 1) return 1L;
+          return fib.apply(number-1) + fib.apply(number-2);
+      }, n);
+  }
   ```
 
+<!--
 参照: 
   - https://www.cnblogs.com/invoker-/p/7723420.html
   - https://www.cnblogs.com/invoker-/p/7728452.html
-
+-->
 
 ## 简单缓存 CacheSrv
 ```java
 // 添加缓存服务
 app.addSource(new CacheSrv());
+```
+```properties
+
+## app.properties 缓存最多保存100条数据
+cacheSrv.itemLimit=100
 ```
 ```java
 // 1. 设置缓存
@@ -484,11 +539,17 @@ final Lazier<String> _id = new Lazier<>(() -> {
     return UUID.randomUUID().toString().replace("-", "");
 });
 ```
-> 延迟获取属性值
-```java
-final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "app"));
-```
-
+* 延迟获取属性值
+  ```java
+  final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "app"));
+  ```
+* 重新计算
+  ```java
+  final Lazier<Integer> _num = new Lazier(() -> new Random().nextInt(10));
+  _num.get();
+  _num.clear(); // 清除重新计算
+  _num.get();
+  ```
 
 ## http客户端
 ```java
@@ -530,7 +591,7 @@ Utils.http().post("http://xnatural.cn:9090/test/json")
     .debug().execute();
 ```
 ```java
-// post 文本
+// post 普通文本
 Utils.http().post("http://xnatural.cn:9090/test/string")
     .textBody("xxxxxxxxxxxxxxxx")
     .debug().execute();
@@ -564,7 +625,7 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 ```
 
 ## 应用例子
-[Demo](https://gitee.com/xnat/appdemo)
+最佳实践: [Demo](https://gitee.com/xnat/appdemo)
 
 [GRule](https://gitee.com/xnat/grule)
 
