@@ -59,7 +59,6 @@ public class AppTest {
         });
         app.addSource(this);
         app.start();
-        //testServerExec();
         Thread.sleep(1000 * 60 * 10);
     }
 

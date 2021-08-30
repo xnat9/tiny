@@ -449,7 +449,7 @@ public class AppContext {
                 if (maximumPoolSize < corePoolSize) maximumPoolSize = corePoolSize;
                 final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
                         ((ServerTpl) source).getAttr("exec.keepAliveTime", Long.class, 2L), TimeUnit.HOURS,
-                        new LinkedBlockingQueue<>(((ServerTpl) source).getAttr("exec.queueCapacity", Integer.class, 10000)),
+                        new LinkedBlockingQueue<>(((ServerTpl) source).getAttr("exec.queueCapacity", Integer.class, 1000)),
                         new ThreadFactory() {
                             final AtomicInteger i = new AtomicInteger(1);
                             @Override
@@ -472,7 +472,7 @@ public class AppContext {
                     exec.allowCoreThreadTimeOut(true);
                 }
                 // 动态添加 系统事件: 关闭线程池
-                ep().listen("sys.stopping", () -> exec.shutdown(), true, 1, -1);
+                ep().listen("sys.stopping", true, 1, -1, () -> exec.shutdown());
                 return exec;
             });
 
@@ -547,11 +547,11 @@ public class AppContext {
             @Override
             public EP addListenerSource(Object s) { ep().addListenerSource(s); return this; }
             @Override
-            public EP listen(String eName, Runnable fn, boolean async, float order, int limit) { return ep().listen(eName, fn, async, order, limit); }
+            public EP listen(String eName, boolean async, float order, int limit, Runnable fn) { return ep().listen(eName, async, order, limit, fn); }
             @Override
-            public EP listen(String eName, Function fn, boolean async, float order, int limit) { return ep().listen(eName, fn, async, order, limit); }
+            public EP listen(String eName, boolean async, float order, int limit, Function fn) { return ep().listen(eName, async, order, limit, fn); }
             @Override
-            public EP listen(String eName, BiFunction fn, boolean async, float order, int limit) { return ep().listen(eName, fn, async, order,limit); }
+            public EP listen(String eName, boolean async, float order, int limit, BiFunction fn) { return ep().listen(eName, async, order,limit, fn); }
             @Override
             public boolean exist(String... eNames) { return ep().exist(eNames); }
             @Override

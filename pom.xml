@@ -17,7 +17,7 @@
         <dependency>
             <groupId>cn.xnatural.enet</groupId>
             <artifactId>enet-event</artifactId>
-            <version>0.0.21</version>
+            <version>0.0.22</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>cn.xnatural.http</groupId>
             <artifactId>http</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>cn.xnatural.jpa</groupId>
             <artifactId>jpa</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>
