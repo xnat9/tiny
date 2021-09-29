@@ -1,12 +1,15 @@
 # 介绍
 轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet) 事件环型框架结构
 
-之所以写这个框架是因为目前现有的java框架都多少比较复杂
-,对java写法, 框架设计, 功能实现等有一些自己的拙见
-,所以一直想写一个java框架来体现框架的本身一些新的思考
+> 框架提供自动适应线程池管理, 解决多线程管理问题: 设计了两级线程池(系统线程池,服务本地线程池)
+> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
+>
+> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
 
-<!-- 框架一直坚持简单原则. 源码简单, 结构简单, 使用简单, 通俗易懂是这个框架的追求
--->
+> 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
+
+> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
+
 
 
 <!--
@@ -64,14 +67,6 @@ endif
 -->
 ![Image text](http://www.plantuml.com/plantuml/png/fPBDQk9G5CVtUOgpZ8imwDA023Fp0ZFBOHQHNCt5wuaarndS3GEbrbQqAokLja9fRH7i1nHC5hwCDz6twCr7e1QHGbVdtdF--Pt_oRbbbniERpMOujOfDWt7QC1N6qtAgOtVqVp9suo0nIWInMqooXK0q7vPr3G9_jPAqRKOZ7kYEu6ydaZ0g1aKzmWB7nMYhX0q8Mciq2geAz-N1VL72z6eC9BB0RS8WYhc2z4P1aUtwyc964s_YC656CtaAITvLTkfHrZGIY0MBw9_2dfyBtuZV-oMGnp8fmaRYLPfQpBesHT1Vx3oha5FGPdflRX2ck1_xGWdmwTmc2OmWk4k544p6PCmbxmTkPZyCSZlQ9ZL2djgk4r7arQJJOJFVkXVXjuod1u7ZrV1sLmCRi8xRpDyofOI7HM9UYUDY7NAMEmLLB4SILMsys0y4-E7BItQd813QnQFdQqFxqLtkldtVtFG4vrpuNk9mrYNeHEZPHdastu5)
 
-> 框架提供自适应线程池管理, 解决多线程管理问题: 设计了两级线程池(系统线程池,服务本地线程池)
-> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
->
-> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
-
-> 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
-
-> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
 
 # 安装教程
 ```xml

@@ -57,7 +57,7 @@ public class AppTest {
             @EL(name = "sys.stopping", async = true)
             void stop() { remoter.stop(); }
         });
-        app.addSource(this);
+        addTestExec(app);
         app.start();
         Thread.sleep(1000 * 60 * 10);
     }
@@ -134,36 +134,21 @@ public class AppTest {
     }
 
 
-    /**
-     * 测试服务本地线程池
-     */
-    @EL(name = "sys.started", async = true)
-    void testServerExec(EC ec) {
-        AppContext app = (AppContext) ec.source();
-        AtomicInteger cnt = new AtomicInteger();
-        app.bean(Sched.class, null).fixedDelay(Duration.ofSeconds(5), () -> {
-            app.exec().execute(() -> {
-                try {
-                    Thread.sleep(1000 * 20);
-                    log.info("===== " + cnt.incrementAndGet() + ", " + app.exec().toString());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
+    static void addTestExec(AppContext app) {
+        app.addSource(new ServerTpl("testExec") {
+            @EL(name = "sys.started", async = true)
+            void test() {
+                bean(Sched.class).fixedDelay(Duration.ofSeconds(1), () -> {
+                    async(() -> {
+                        try {
+                            Thread.sleep(1000 * 10);
+                            log.info("===== " + ", " + app.exec() +",    " + exec());
+                        } catch (InterruptedException e) {
+                            log.error("", e);
+                        }
+                    });
+                });
+            }
         });
-    }
-
-
-    @Test
-    void sysLoadTest() throws Exception {
-        final AppContext app = new AppContext();
-        app.start();
-        for (int i = 0; i < 100000; i++) {
-            int finalI = i;
-            app.exec().execute(() -> {
-                System.out.println("Task " + finalI);
-            });
-        }
-        Thread.sleep(10 * 60 * 1000);
     }
 }
