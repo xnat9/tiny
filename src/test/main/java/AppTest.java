@@ -1,6 +1,5 @@
 import cn.xnatural.app.AppContext;
 import cn.xnatural.app.ServerTpl;
-import cn.xnatural.enet.event.EC;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.http.HttpServer;
 import cn.xnatural.jpa.Repo;
@@ -12,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Random;
 
 public class AppTest {
 
@@ -141,8 +140,8 @@ public class AppTest {
                 bean(Sched.class).fixedDelay(Duration.ofSeconds(1), () -> {
                     async(() -> {
                         try {
-                            Thread.sleep(1000 * 10);
-                            log.info("===== " + ", " + app.exec() +",    " + exec());
+                            Thread.sleep(500 * (new Random().nextInt(30) + 1));
+                            log.info("===== " + exec());
                         } catch (InterruptedException e) {
                             log.error("", e);
                         }

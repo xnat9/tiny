@@ -65,13 +65,22 @@ public class AppContext {
      */
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ...");
-        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, Runtime.getRuntime().availableProcessors() >= 8 ? 8 : 4);
-        Integer maximumPoolSize = Math.max(corePoolSize, getAttr("sys.exec.maximumPoolSize", Integer.class, 16));
-        final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
+        int processorCount = Runtime.getRuntime().availableProcessors();
+        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, processorCount >= 8 ? 8 : 4);
+        final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize,
+                Math.max(corePoolSize, getAttr("sys.exec.maximumPoolSize", Integer.class, processorCount <= 8 ? 16 : processorCount * 2)),
                 getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
-                new LinkedBlockingQueue<>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)),
+                new LinkedBlockingQueue<Runnable>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)) {
+                    boolean threshold() { // 让线程池创建(除核心线程外)新的线程的临界条件
+                        return _exec.get().getActiveCount() >= _exec.get().getPoolSize() &&
+                                _exec.get().getPoolSize() >= _exec.get().getCorePoolSize() &&
+                                _exec.get().getPoolSize() < _exec.get().getMaximumPoolSize();
+                    }
+                    @Override
+                    public boolean offer(Runnable r) { return !threshold() && super.offer(r); }
+                },
                 new ThreadFactory() {
-                    final AtomicInteger i = new AtomicInteger(1);
+                    final AtomicLong i = new AtomicLong(1);
                     @Override
                     public Thread newThread(Runnable r) {
                         return new Thread(r, "sys-" + i.getAndIncrement());
@@ -327,7 +336,7 @@ public class AppContext {
         if (qName == null || qName.isEmpty()) throw new IllegalArgumentException("Param qName not empty");
         Devourer devourer = queues.get(qName);
         if (devourer == null) {
-            synchronized (this) {
+            synchronized (queues) {
                 devourer = queues.get(qName);
                 if (devourer == null) {
                     devourer = new Devourer(qName, exec());
@@ -441,182 +450,47 @@ public class AppContext {
      */
     protected Executor wrapExecForSource(Object source) {
         return new ExecutorService() {
-            protected final Lazier<ThreadPoolExecutor> _localExec = new Lazier<>(() -> {
-                if (!(source instanceof ServerTpl)) return _exec.get();
-                log.info("init '{}' executor ...", ((ServerTpl) source).name);
-                Integer corePoolSize = ((ServerTpl) source).getAttr("exec.corePoolSize", Integer.class, 2);
-                Integer maximumPoolSize = Math.max(
-                        corePoolSize,
-                        ((ServerTpl) source).getAttr("exec.maximumPoolSize", Integer.class, Runtime.getRuntime().availableProcessors() <= 12 ? 12 : (int) Math.round(Runtime.getRuntime().availableProcessors() * 1.5))
-                );
-                final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
-                        ((ServerTpl) source).getAttr("exec.keepAliveTime", Long.class, 2L), TimeUnit.HOURS,
-                        new BlockingQueue<Runnable>() {
-                            final BlockingQueue<Runnable> delegate = new LinkedBlockingQueue<>();
-                            // 新增线程临界值
-                            final int upThreshold = ((ServerTpl) source).getAttr("exec.upThreshold", Integer.class, getAttr("sys.exec.upThreshold", Integer.class, 2));
-                            boolean threshold() { // 让线程池创建(除核心线程外)新的线程的临界条件
-                                return delegate.size() >= upThreshold && _localExec.get().getPoolSize() >= corePoolSize &&
-                                        _localExec.get().getActiveCount() >= _localExec.get().getPoolSize() &&
-                                        _localExec.get().getPoolSize() < maximumPoolSize;
-                            }
-                            @Override
-                            public boolean add(Runnable r) { return !threshold() && delegate.add(r); }
-
-                            @Override
-                            public boolean offer(Runnable r) { return !threshold() && delegate.offer(r); }
-
-                            @Override
-                            public void put(Runnable r) throws InterruptedException { delegate.put(r); }
-
-                            @Override
-                            public boolean offer(Runnable r, long timeout, TimeUnit unit) throws InterruptedException {
-                                return !threshold() && delegate.offer(r, timeout, unit);
-                            }
-
-                            @Override
-                            public Runnable take() throws InterruptedException { return delegate.take(); }
-
-                            @Override
-                            public Runnable poll(long timeout, TimeUnit unit) throws InterruptedException { return delegate.poll(timeout, unit); }
-
-                            @Override
-                            public int remainingCapacity() { return delegate.remainingCapacity(); }
-
-                            @Override
-                            public boolean remove(Object o) { return delegate.remove(o); }
-
-                            @Override
-                            public boolean contains(Object o) { return delegate.contains(o); }
-
-                            @Override
-                            public int drainTo(Collection<? super Runnable> c) { return delegate.drainTo(c); }
-
-                            @Override
-                            public int drainTo(Collection<? super Runnable> c, int maxElements) { return delegate.drainTo(c, maxElements); }
-
-                            @Override
-                            public Runnable remove() { return delegate.remove(); }
-
-                            @Override
-                            public Runnable poll() { return delegate.poll(); }
-
-                            @Override
-                            public Runnable element() { return delegate.element(); }
-
-                            @Override
-                            public Runnable peek() { return delegate.peek(); }
-
-                            @Override
-                            public int size() { return delegate.size(); }
-
-                            @Override
-                            public boolean isEmpty() { return delegate.isEmpty(); }
-
-                            @Override
-                            public Iterator<Runnable> iterator() { return delegate.iterator(); }
-
-                            @Override
-                            public Object[] toArray() { return delegate.toArray(); }
-
-                            @Override
-                            public <T> T[] toArray(T[] a) { return delegate.toArray(a); }
-
-                            @Override
-                            public boolean containsAll(Collection<?> c) { return delegate.containsAll(c); }
-
-                            @Override
-                            public boolean addAll(Collection<? extends Runnable> c) { return delegate.addAll(c); }
-
-                            @Override
-                            public boolean removeAll(Collection<?> c) { return delegate.removeAll(c); }
-
-                            @Override
-                            public boolean retainAll(Collection<?> c) { return delegate.retainAll(c); }
-
-                            @Override
-                            public void clear() { delegate.clear(); }
-                        },
-                        // new LinkedBlockingQueue<>(((ServerTpl) source).getAttr("exec.queueCapacity", Integer.class, corePoolSize)),
-                        new ThreadFactory() {
-                            final AtomicLong i = new AtomicLong(1);
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                return new Thread(r, ((ServerTpl) source).name + "-" + i.getAndIncrement());
-                            }
-                        },
-                        new ThreadPoolExecutor.CallerRunsPolicy()
-                ) {
-                    @Override
-                    public void execute(Runnable fn) {
-                        try {
-                            super.execute(fn);
-                        } catch (Throwable t) {
-                            log.error(((ServerTpl) source).name + " task error", t);
-                        }
-                    }
-                };
-                if (((ServerTpl) source).getAttr("exec.allowCoreThreadTimeOut", Boolean.class, true)) {
-                    exec.allowCoreThreadTimeOut(true);
-                }
-                // 动态添加 系统事件: 关闭线程池
-                ep().listen("sys.stopping", true, 1, -1, () -> exec.shutdown());
-                return exec;
-            });
-
-            protected ExecutorService getExec() {
-                // 有可能存在 对列中正在排对的任务个数>0, 但activeCount没有全部在运行中(因为任务是先加入到对列中再取出来, 会有时间差)
-                // 主线程池忙,并且相对本地线程池更忙 才用本地线程池
-                if (
-                        _exec.get().getActiveCount() >= _exec.get().getCorePoolSize() &&
-                        _exec.get().getQueue().size() >= _localExec.get().getQueue().size()
-                ) return _localExec.get();
-                return _exec.get();
-            }
-
             @Override
             public void shutdown() {}
             @Override
             public List<Runnable> shutdownNow() { return emptyList(); }
             @Override
-            public boolean isShutdown() { return _exec.get().isShutdown() && (!_localExec.done() || _localExec.get().isShutdown()); }
+            public boolean isShutdown() { return _exec.get().isShutdown(); }
             @Override
-            public boolean isTerminated() { return _exec.get().isTerminated() && (!_localExec.done() || _localExec.get().isTerminated()); }
+            public boolean isTerminated() { return _exec.get().isTerminated(); }
             @Override
             public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-                return getExec().awaitTermination(timeout, unit);
+                return _exec.get().awaitTermination(timeout, unit);
             }
             @Override
-            public <T> Future<T> submit(Callable<T> task) { return getExec().submit(task); }
+            public <T> Future<T> submit(Callable<T> task) { return _exec.get().submit(task); }
             @Override
-            public <T> Future<T> submit(Runnable task, T result) { return getExec().submit(task, result); }
+            public <T> Future<T> submit(Runnable task, T result) { return _exec.get().submit(task, result); }
             @Override
-            public Future<?> submit(Runnable task) { return getExec().submit(task); }
+            public Future<?> submit(Runnable task) { return _exec.get().submit(task); }
             @Override
             public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-                return getExec().invokeAll(tasks);
+                return _exec.get().invokeAll(tasks);
             }
             @Override
             public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
-                return getExec().invokeAll(tasks, timeout, unit);
+                return _exec.get().invokeAll(tasks, timeout, unit);
             }
             @Override
             public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-                return getExec().invokeAny(tasks);
+                return _exec.get().invokeAny(tasks);
             }
             @Override
             public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                return getExec().invokeAny(tasks, timeout, unit);
+                return _exec.get().invokeAny(tasks, timeout, unit);
             }
             @Override
-            public void execute(Runnable cmd) { getExec().execute(cmd); }
-            public int getCorePoolSize() { return _exec.get().getCorePoolSize() + (_localExec.done() ? _localExec.get().getCorePoolSize() : 0); }
-            public int getWaitingCount() { return _exec.get().getQueue().size() + (_localExec.done() ? _localExec.get().getQueue().size() : 0); }
+            public void execute(Runnable cmd) { _exec.get().execute(cmd); }
+            public int getCorePoolSize() { return _exec.get().getCorePoolSize() + (_exec.done() ? _exec.get().getCorePoolSize() : 0); }
+            public int getWaitingCount() { return _exec.get().getQueue().size() + (_exec.done() ? _exec.get().getQueue().size() : 0); }
 
             @Override
-            public String toString() {
-                return ((source instanceof ServerTpl) ? ((ServerTpl) source).getName() + "{" : "") + (_localExec.done() ? _localExec.get() : _exec.get()) + "}";
-            }
+            public String toString() { return _exec.done() ? _exec.get().toString() : "uninitialized"; }
         };
     }
 

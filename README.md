@@ -1,15 +1,12 @@
 # 介绍
 轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet) 事件环型框架结构
 
-> 框架提供自动适应线程池管理, 解决多线程管理问题: 设计了两级线程池(系统线程池,服务本地线程池)
-> > 自适应任务突增压力,同时保证各个业务的任务隔离(即使某个业务任务突增也不会影响其他业务导致整个系统被拖垮)
->
-> > 服务本地线程池当空闲时会自动回收, 避免线程池隔离时各个业务设置不合理导致的资源分配不均,任务阻塞或者空转问题
+> 系统只一个公用线程池: 所有的执行都被抽象成Runnable加入到公用线程池中执行
+> > 系统中的任务只有在线程池到达最大后,才需要排对执行(和默认线程池的行为不同)
 
 > 上层业务不需要创建线程池和线程增加复杂度, 而使用Devourer控制执行并发
 
-> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=4, 和 jvm内存参数 -Xmx512m 控制
-
+> 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=8, sys.exec.maximumPoolSize=30 和 jvm内存参数 -Xmx512m 控制
 
 
 <!--
@@ -53,19 +50,10 @@ else
   end fork
 endif
 
-if (系统线程池是否空闲) then (闲)
-  :系统线程池;
-  kill
-else (忙)
-  :服务本地线程池;
-  note right
-    自动适配创建
-  end note
-  kill
-endif
+:系统线程池;
 @enduml
 -->
-![Image text](http://www.plantuml.com/plantuml/png/fPBDQk9G5CVtUOgpZ8imwDA023Fp0ZFBOHQHNCt5wuaarndS3GEbrbQqAokLja9fRH7i1nHC5hwCDz6twCr7e1QHGbVdtdF--Pt_oRbbbniERpMOujOfDWt7QC1N6qtAgOtVqVp9suo0nIWInMqooXK0q7vPr3G9_jPAqRKOZ7kYEu6ydaZ0g1aKzmWB7nMYhX0q8Mciq2geAz-N1VL72z6eC9BB0RS8WYhc2z4P1aUtwyc964s_YC656CtaAITvLTkfHrZGIY0MBw9_2dfyBtuZV-oMGnp8fmaRYLPfQpBesHT1Vx3oha5FGPdflRX2ck1_xGWdmwTmc2OmWk4k544p6PCmbxmTkPZyCSZlQ9ZL2djgk4r7arQJJOJFVkXVXjuod1u7ZrV1sLmCRi8xRpDyofOI7HM9UYUDY7NAMEmLLB4SILMsys0y4-E7BItQd813QnQFdQqFxqLtkldtVtFG4vrpuNk9mrYNeHEZPHdastu5)
+![Image text](http://www.plantuml.com/plantuml/png/fPBFIWCn4CRlUOevjeT5skC6Ia5z0JsAXvHCRMWwARkfqZVmZz9waeAe1S4U1151QFVWopIxFePPTmiAfGYUPkVxllrD9gGPMn7PGK-pkAkeBoBHWsr3KbbbQ9ValXrgX8vMX2pkQsKP00G77IKbqc7GoDimlRrovrEeyI82uaWesX2i_pL8d259A0OprORACacyKTaR48cMnceLR0S9AkvbxavlqhEdp-cbcyostFZEJPxzLzNpsYRgvbW86k3cxsvq3Vox3tVms0mYZA1M2eOmQ0q3N_ZgZtGqNYuUWPUWyj2RSVLIi2Scn_doBnoL0kKmMeT2aiMQg6FykN9Ot1ZKrWnSUVKD7lscarHjniBiBScI-spnaSqkqjS7pfhUyQ_e2m00)
 
 
 # 安装教程
