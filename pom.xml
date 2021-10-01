@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.xnatural.app</groupId>
-    <artifactId>app</artifactId>
+    <artifactId>tiny</artifactId>
     <packaging>jar</packaging>
     <version>1.0.9</version>
 
     <name>app</name>
-    <description>java轻量级通用异步框架</description>
-    <url>https://gitee.com/xnat/app</url>
+    <description>小巧的java应用异步框架</description>
+    <url>https://gitee.com/xnat/tiny</url>
 
     <dependencies>
         <dependency>
