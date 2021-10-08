@@ -25,15 +25,14 @@
             <version>1</version>
         </dependency>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.6</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.7.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -51,7 +50,7 @@
         <dependency>
             <groupId>cn.xnatural.remoter</groupId>
             <artifactId>remoter</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
