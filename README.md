@@ -608,9 +608,9 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 ```
 
 ## 应用例子
-最佳实践: [Demo](https://gitee.com/xnat/appdemo)
-
-[GRule](https://gitee.com/xnat/grule)
+最佳实践: [javaDemo](https://gitee.com/xnat/appdemo)
+, [scalaDemo](https://gitee.com/xnat/tinyscalademo)
+, [GRule](https://gitee.com/xnat/grule)
 
 # 1.0.9 ing
 - [ ] CacheSrv accessTime
