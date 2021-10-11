@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cn.xnatural.app</groupId>
+    <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
     <packaging>jar</packaging>
     <version>1.0.10</version>
