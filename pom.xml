@@ -29,10 +29,22 @@
             <artifactId>logback-classic</artifactId>
             <version>1.2.6</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba</groupId>-->
+<!--            <artifactId>druid</artifactId>-->
+<!--            <version>1.2.8</version>-->
+<!--        </dependency>-->
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.7.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>cn.xnatural</groupId>
+            <artifactId>jpa</artifactId>
+            <version>1.0.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -51,12 +63,6 @@
             <groupId>cn.xnatural.remoter</groupId>
             <artifactId>remoter</artifactId>
             <version>1.0.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>cn.xnatural.jpa</groupId>
-            <artifactId>jpa</artifactId>
-            <version>1.0.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -1,121 +1,97 @@
 import cn.xnatural.app.AppContext;
 import cn.xnatural.app.ServerTpl;
+import cn.xnatural.app.util.DB;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.http.HttpServer;
-import cn.xnatural.jpa.Repo;
 import cn.xnatural.remoter.Remoter;
 import cn.xnatural.sched.Sched;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.inject.Named;
 import java.time.Duration;
 import java.util.Random;
 
 public class AppTest {
 
-    static final Logger log = LoggerFactory.getLogger(AppTest.class);
+    public static void main(String[] args) {
+        new AppContext()
+                .addSource(
+                        new ServerTpl("server1") {
+                            @EL(name = "sys.starting")
+                            void start() { log.info("{} start", name); }
 
-    @Test
-    void appTest() throws Exception {
-        final AppContext app = new AppContext();
-        app.addSource(new ServerTpl("server1") {
-            @EL(name = "sys.starting")
-            void start() {
-                log.info("{} start", name);
-            }
-        });
-        app.addSource(new ServerTpl() {
-            @Named
-            ServerTpl server1;
-
-            @EL(name = "sys.starting")
-            void start() {
-                log.info("{} ========= {}", name, server1.getName());
-            }
-        });
-        addWeb(app);
-        addSched(app);
-        addJpa(app);
-        app.addSource(new ServerTpl("remoter") {
-            Remoter remoter;
-            @EL(name = "sched.started")
-            void start() {
-                remoter = new Remoter(app.name(), app.id(), attrs(), exec(), ep, bean(Sched.class));
-                exposeBean(remoter);
-                exposeBean(remoter.getAioClient());
-                ep.fire(name + ".started");
-            }
-
-            @EL(name = "sys.heartbeat", async = true)
-            void heartbeat() {
-                remoter.sync();
-                remoter.getAioServer().clean();
-            }
-            @EL(name = "sys.stopping", async = true)
-            void stop() { remoter.stop(); }
-        });
-        addTestExec(app);
-        app.start();
-        Thread.sleep(1000 * 60 * 10);
+                            @EL(name = "sys.started", async = true)
+                            void started() {
+                                log.info("测试sql: " + bean(DB.class).single("select count(1) from test", Integer.class));
+                            }
+                        }
+                        , sched()
+                        , web()
+                        , DB()
+                        , remoter()
+                        , testExec()
+                ).start();
     }
+
 
     /**
      * 创建数据库操作
      */
-    static void addJpa(AppContext app) {
-        app.addSource(new ServerTpl("jpa_local") { //数据库 jpa_local
-            Repo repo;
+    static ServerTpl DB() {
+        return new ServerTpl("db_local") { //数据库
+            DB DB;
             @EL(name = "sys.starting", async = true)
             void start() {
-                repo = new Repo(attrs()).init();
-                exposeBean(repo);
+                DB = new DB(getStr("url", null));
+                attrs().forEach((k, v) -> DB.dsAttr(k, v));
+                exposeBean(DB);
                 ep.fire(name + ".started");
             }
 
             @EL(name = "sys.stopping", async = true, order = 2f)
-            void stop() { if (repo != null) repo.close(); }
-        });
+            void stop() {
+                if (DB != null) {
+                    try { DB.close(); } catch (Exception e) {
+                        log.error("", e);
+                    }
+                }
+            }
+        };
     }
 
 
     /**
      * 创建 web服务
      */
-    static void addWeb(AppContext app) {
-        app.addSource(
-                new ServerTpl("web") { //添加http服务
-                    HttpServer server;
+    static ServerTpl web() {
+        return new ServerTpl("web") { //添加http服务
+            HttpServer server;
 
-                    @EL(name = "sys.starting", async = true)
-                    void start() {
-                        server = new HttpServer(app.attrs(name), exec());
-                        server.buildChain(chain -> {
-                            chain.get("test", hCtx -> hCtx.render("xxxxxx"));
-                        });
-                        server.start();
-                        server.enabled = false;
-                    }
+            @EL(name = "sys.starting", async = true)
+            void start() {
+                server = new HttpServer(attrs(), exec());
+                server.buildChain(chain -> {
+                    chain.get("test", hCtx -> hCtx.render("xxxxxx"));
+                });
+                server.start();
+                server.enabled = false;
+            }
 
-                    @EL(name = "sys.started", async = true)
-                    void started() {
-                        for (Object ctrl : server.getCtrls()) exposeBean(ctrl);
-                        server.enabled = true;
-                    }
+            @EL(name = "sys.started", async = true)
+            void started() {
+                for (Object ctrl : server.getCtrls()) exposeBean(ctrl);
+                server.enabled = true;
+            }
 
-                    @EL(name = "sys.stop")
-                    void stop() { if (server != null) server.stop(); }
-                }
-        );
+            @EL(name = "sys.stop")
+            void stop() { if (server != null) server.stop(); }
+        };
     }
 
 
     /**
      * 添加时间调度服务
      */
-    static void addSched(AppContext app) {
-        app.addSource(new ServerTpl("sched") { // 定时任务
+    static ServerTpl sched() {
+        return new ServerTpl("sched") { // 定时任务
             Sched sched;
             @EL(name = "sys.starting", async = true)
             void start() {
@@ -129,12 +105,35 @@ public class AppTest {
 
             @EL(name = "sys.stopping", async = true)
             void stop() { if (sched != null) sched.stop(); }
-        });
+        };
     }
 
 
-    static void addTestExec(AppContext app) {
-        app.addSource(new ServerTpl("testExec") {
+    static ServerTpl remoter() {
+        return new ServerTpl("remoter") {
+            Remoter remoter;
+            @EL(name = "sched.started")
+            void start() {
+                remoter = new Remoter(app().name(), app().id(), attrs(), exec(), ep, bean(Sched.class));
+                exposeBean(remoter);
+                exposeBean(remoter.getAioClient());
+                ep.fire(name + ".started");
+            }
+
+            @EL(name = "sys.heartbeat", async = true)
+            void heartbeat() {
+                remoter.sync();
+                remoter.getAioServer().clean();
+            }
+
+            @EL(name = "sys.stopping", async = true)
+            void stop() { remoter.stop(); }
+        };
+    }
+
+
+    static ServerTpl testExec() {
+        return new ServerTpl("testExec") {
             @EL(name = "sys.started", async = true)
             void test() {
                 bean(Sched.class).fixedDelay(Duration.ofSeconds(1), () -> {
@@ -148,6 +147,6 @@ public class AppTest {
                     });
                 });
             }
-        });
+        };
     }
 }

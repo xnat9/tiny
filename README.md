@@ -534,6 +534,44 @@ final Lazier<String> _id = new Lazier<>(() -> {
   _num.get();
   ```
 
+## DB数据库操作工具
+#### 创建一个数据源
+```java
+DB repo = new DB("jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root&allowPublicKeyRetrieval=true");
+```
+#### 查询单条记录
+```java
+repo.row("select * from test order by id desc");
+```
+#### 查询多条记录
+```java
+repo.rows("select * from test limit 10");
+repo.rows("select * from test where id in (?, ?)", 2, 7);
+```
+#### 查询单个值
+```java
+// 只支持 Integer.class, Long.class, String.class, Double.class, BigDecimal.class, Boolean.class, Date.class
+repo.single("select count(1) from test", Integer.class);
+```
+#### 插入一条记录
+```java
+repo.execute("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
+```
+#### 更新一条记录
+```java
+repo.execute("update test set age = ? where id = ?", 10, 1)
+```
+#### 事务
+```java
+// 执行多条sql语句
+repo.trans(() -> {
+    // 插入并返回id
+    Object id = repo.insertWithGeneratedKey("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
+    repo.execute("update test set age = ? where id = ?", 18, id);
+    return null;
+});
+```
+
 ## http客户端
 ```java
 // get
@@ -612,7 +650,11 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 , [Demo(scala)](https://gitee.com/xnat/tinyscalademo)
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
-# 1.0.9 ing
+# 1.0.10 ing
+- [x] maven release 统一group: xnatural.cn
+- [x] 代码优化: Httper, Tailer, ToMap从Utils中独立出来
+- [x] DB: 数据库操作工具
+- [ ] Copier: 对象拷贝工具
 - [ ] CacheSrv accessTime
 
 # 参与贡献

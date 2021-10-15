@@ -24,13 +24,12 @@ public class ServerTpl {
      * 1. 可用于属性配置前缀
      * 2. 可用于事件名字前缀
      */
-    protected final    String name;
+    protected final String name;
     /**
      * 1. 当此服务被加入核心时, 此值会自动设置为核心的EP.
      * 2. 如果要服务独立运行时, 请手动设置
      */
-    @Inject
-    protected       EP     ep;
+    @Inject protected EP ep;
     private final Lazier<AppContext> _app = new Lazier<>(() -> bean(AppContext.class));
     private final Lazier<ExecutorService> _exec = new Lazier<>(() -> bean(ExecutorService.class));
     //private final LazySupplier<Map<String, Object>> _config = new LazySupplier<>(() -> new HashMap<>());
@@ -113,23 +112,21 @@ public class ServerTpl {
      * 异步执行. 拦截异常
      * @param fn 异步执行的函数
      * @param exFn 错误处理函数
-     * @return 执行函数
      */
-    public Runnable async(Runnable fn, Consumer<Throwable> exFn) {
+    public ServerTpl async(Runnable fn, Consumer<Throwable> exFn) {
         _exec.get().execute(() -> {
             try {fn.run();} catch (Throwable ex) {
                 if (exFn != null) exFn.accept(ex);
                 else log.error("", ex);
             }
         });
-        return fn;
+        return this;
     }
     /**
      * 异步执行. 拦截异常
      * @param fn 异步执行的函数
-     * @return 执行函数
      */
-    public Runnable async(Runnable fn) { return async(fn, null); }
+    public ServerTpl async(Runnable fn) { return async(fn, null); }
 
 
     /**
