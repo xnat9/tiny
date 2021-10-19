@@ -1,5 +1,5 @@
 # 介绍
-轻量级java应用异步框架. 基于 [enet](https://gitee.com/xnat/enet) 事件环型框架结构
+小巧的java应用微内核框架. 基于 [enet](https://gitee.com/xnat/enet) 事件环型框架结构
 
 > 系统只一个公用线程池: 所有的执行都被抽象成Runnable加入到公用线程池中执行
 > > 系统中的任务只有在线程池到达最大后,才需要排对执行(和默认线程池的行为不同)
@@ -446,6 +446,194 @@ if (lock.tryLock()) { // 尝试获取一个锁
 }
 ```
 
+## 数据库操作工具
+#### 创建一个数据源
+```java
+DB repo = new DB("jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root&allowPublicKeyRetrieval=true");
+```
+#### 查询单条记录
+```java
+repo.row("select * from test order by id desc");
+```
+#### 查询多条记录
+```java
+repo.rows("select * from test limit 10");
+repo.rows("select * from test where id in (?, ?)", 2, 7);
+```
+#### 查询单个值
+```java
+// 只支持 Integer.class, Long.class, String.class, Double.class, BigDecimal.class, Boolean.class, Date.class
+repo.single("select count(1) from test", Integer.class);
+```
+#### 插入一条记录
+```java
+repo.execute("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
+```
+#### 更新一条记录
+```java
+repo.execute("update test set age = ? where id = ?", 10, 1)
+```
+#### 事务
+```java
+// 执行多条sql语句
+repo.trans(() -> {
+    // 插入并返回id
+    Object id = repo.insertWithGeneratedKey("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
+    repo.execute("update test set age = ? where id = ?", 18, id);
+    return null;
+});
+```
+
+## http客户端
+```java
+// get
+Utils.http().get("http://xnatural.cn:9090/test/cus?p2=2")
+    .header("test", "test") // 自定义header
+    .cookie("sessionId", "xx") // 自定义 cookie
+    .connectTimeout(5000) // 设置连接超时 5秒
+    .readTimeout(15000) // 设置读结果超时 15秒
+    .param("p1", 1) // 添加参数
+    .debug().execute();
+```
+```java
+// post
+Utils.http().post("http://xnatural.cn:9090/test/cus")
+    .debug().execute();
+```
+```java
+// post 表单
+Utils.http().post("http://xnatural.cn:9090/test/form")
+    .param("p1", "p1")
+    .debug().execute();
+```
+```java
+// post 上传文件
+Utils.http().post("http://xnatural.cn:9090/test/upload")
+    .param("file", new File("d:/tmp/1.txt"))
+    .debug().execute();
+
+// post 上传文件流. 一般上传大文件 可配合 汇聚流 使用
+Utils.http().post("http://xnatural.cn:9090/test/upload")
+    .fileStream("file", "test.md", new FileInputStream("d:/tmp/test.md"))
+    .debug().execute();
+```
+```java
+// post json
+Utils.http().post("http://xnatural.cn:9090/test/json")
+    .jsonBody(new JSONObject().fluentPut("p1", 1).toString())
+    .debug().execute();
+```
+```java
+// post 普通文本
+Utils.http().post("http://xnatural.cn:9090/test/string")
+    .textBody("xxxxxxxxxxxxxxxx")
+    .debug().execute();
+```
+
+## 对象拷贝器
+#### javabean 拷贝到 javabean
+```java
+Utils.copier(
+      new Object() {
+          public String name = "徐言";
+      }, 
+      new Object() {
+          private String name;
+          public void setName(String name) { this.name = name; }
+          public String getName() { return name; }
+      }
+).build();
+```
+#### 对象 转换成 map
+```java
+Utils.copier(
+      new Object() {
+          public String name = "方羽";
+          public String getAge() { return 5000; }
+      }, 
+      new HashMap()
+).build();
+```
+#### 添加额外属性源
+```java
+Utils.copier(
+      new Object() {
+          public String name = "云仙君";
+      }, 
+      new Object() {
+          private String name;
+          public Integer age;
+          public void setName(String name) { this.name = name; }
+          public String getName() { return name; }
+          
+      }
+).add("age", () -> 1).build();
+```
+#### 忽略属性
+```java
+Utils.copier(
+      new Object() {
+          public String name = "徐言";
+          public Integer age = 22;
+      }, 
+      new Object() {
+          private String name;
+          public Integer age = 33;
+          public void setName(String name) { this.name = name; }
+          public String getName() { return name; }
+          
+      }
+).ignore("age").build(); // 最后 age 为33
+```
+#### 属性值转换
+```java
+Utils.copier(
+      new Object() {
+          public long time = System.currentTimeMillis();
+      }, 
+      new Object() {
+          private String time;
+          public void setTime(String time) { this.time = time; }
+          public String getTime() { return time; }
+          
+      }
+).addConverter("time", o -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date((long) o)))
+        .build();
+```
+#### 属性值转换
+```java
+Utils.copier(
+      new Object() {
+          public String name;
+      }, 
+      new Object() {
+          private String name = "方羽";
+          public void setName(String name) { this.name = name; }
+          public String getName() { return name; }
+          
+      }
+).ignoreNull(true).build(); // 最后 name 为 方羽
+```
+#### 属性名映射
+```java
+Utils.copier(
+      new Object() {
+          public String p1 = "徐言";
+      }, 
+      new Object() {
+          private String pp1 = "方羽";
+          public void setPp1(String pp1) { this.pp1 = pp1; }
+          public String getPp1() { return pp1; }
+          
+      }
+).mapProp( "p1", "pp1").build(); // 最后 name 为 徐言
+```
+
+## 文件内容监控器(类linux tail)
+```java
+Utils.tailer().tail("d:/tmp/tmp.json", 5);
+```
+
 ## 无限递归优化实现 Recursion
 > 解决java无尾递归替换方案. 例:
   ```java
@@ -534,116 +722,6 @@ final Lazier<String> _id = new Lazier<>(() -> {
   _num.get();
   ```
 
-## DB数据库操作工具
-#### 创建一个数据源
-```java
-DB repo = new DB("jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root&allowPublicKeyRetrieval=true");
-```
-#### 查询单条记录
-```java
-repo.row("select * from test order by id desc");
-```
-#### 查询多条记录
-```java
-repo.rows("select * from test limit 10");
-repo.rows("select * from test where id in (?, ?)", 2, 7);
-```
-#### 查询单个值
-```java
-// 只支持 Integer.class, Long.class, String.class, Double.class, BigDecimal.class, Boolean.class, Date.class
-repo.single("select count(1) from test", Integer.class);
-```
-#### 插入一条记录
-```java
-repo.execute("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
-```
-#### 更新一条记录
-```java
-repo.execute("update test set age = ? where id = ?", 10, 1)
-```
-#### 事务
-```java
-// 执行多条sql语句
-repo.trans(() -> {
-    // 插入并返回id
-    Object id = repo.insertWithGeneratedKey("insert into test(name, age, create_time) values(?, ?, ?)", "方羽", 5000, new Date());
-    repo.execute("update test set age = ? where id = ?", 18, id);
-    return null;
-});
-```
-
-## http客户端
-```java
-// get
-Utils.http().get("http://xnatural.cn:9090/test/cus?p2=2")
-    .header("test", "test") // 自定义header
-    .cookie("sessionId", "xx") // 自定义 cookie
-    .connectTimeout(5000) // 设置连接超时 5秒
-    .readTimeout(15000) // 设置读结果超时 15秒
-    .param("p1", 1) // 添加参数
-    .debug().execute();
-```
-```java
-// post
-Utils.http().post("http://xnatural.cn:9090/test/cus")
-    .debug().execute();
-```
-```java
-// post 表单
-Utils.http().post("http://xnatural.cn:9090/test/form")
-    .param("p1", "p1")
-    .debug().execute();
-```
-```java
-// post 上传文件
-Utils.http().post("http://xnatural.cn:9090/test/upload")
-    .param("file", new File("d:/tmp/1.txt"))
-    .debug().execute();
-
-// post 上传文件流. 一般上传大文件 可配合 汇聚流 使用
-Utils.http().post("http://xnatural.cn:9090/test/upload")
-    .fileStream("file", "test.md", new FileInputStream("d:/tmp/test.md"))
-    .debug().execute();
-```
-```java
-// post json
-Utils.http().post("http://xnatural.cn:9090/test/json")
-    .jsonBody(new JSONObject().fluentPut("p1", 1).toString())
-    .debug().execute();
-```
-```java
-// post 普通文本
-Utils.http().post("http://xnatural.cn:9090/test/string")
-    .textBody("xxxxxxxxxxxxxxxx")
-    .debug().execute();
-```
-
-## Map构建器
-```java
-// 把bean转换成map
-Utils.toMapper(bean).build();
-// 添加属性
-Utils.toMapper(bean).add("属性名", 属性值).build();
-// 忽略属性
-Utils.toMapper(bean).ignore("属性名").build();
-// 转换属性
-Utils.toMapper(bean).addConverter("属性名", Function<原属性值, 转换后的属性值>).build();
-// 衍生属性
-Utils.toMapper(bean).addConverter("属性名", "新属性", Function<原属性值, 转换后的属性值>).build();
-// 忽略null属性
-Utils.toMapper(bean).ignoreNull().build();
-// 属性更名
-Utils.toMapper(bean).aliasProp(原属性名, 新属性名).build();
-// 排序map
-Utils.toMapper(bean).sort().build();
-// 显示class属性
-Utils.toMapper(bean).showClassProp().build();
-```
-
-## 文件内容监控器(类linux tail)
-```java
-Utils.tailer().tail("d:/tmp/tmp.json", 5);
-```
 
 ## 应用例子
 最佳实践: [Demo(java)](https://gitee.com/xnat/appdemo)
@@ -652,9 +730,9 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 
 # 1.0.10 ing
 - [x] maven release 统一group: xnatural.cn
-- [x] 代码优化: Httper, Tailer, ToMap从Utils中独立出来
+- [x] 代码优化: Httper, Tailer从Utils中独立出来
 - [x] DB: 数据库操作工具
-- [ ] Copier: 对象拷贝工具
+- [x] Copier: 对象拷贝工具
 - [ ] CacheSrv accessTime
 
 # 参与贡献

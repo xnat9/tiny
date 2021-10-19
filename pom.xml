@@ -41,12 +41,12 @@
             <version>5.7.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>cn.xnatural</groupId>
-            <artifactId>jpa</artifactId>
-            <version>1.0.7</version>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>cn.xnatural</groupId>-->
+<!--            <artifactId>jpa</artifactId>-->
+<!--            <version>1.0.7</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>cn.xnatural.http</groupId>
             <artifactId>http</artifactId>

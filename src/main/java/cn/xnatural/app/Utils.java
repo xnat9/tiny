@@ -1,5 +1,6 @@
 package cn.xnatural.app;
 
+import cn.xnatural.app.util.Copier;
 import cn.xnatural.app.util.Httper;
 import cn.xnatural.app.util.Tailer;
 import cn.xnatural.app.util.ToMap;
@@ -234,13 +235,26 @@ public class Utils {
      * 文件内容监控器(类linux tail)
      * @return {@link Tailer}
      */
-    public static Tailer tailer() {return new Tailer();}
+    public static Tailer tailer() { return new Tailer(); }
 
 
     /**
      * 把一个bean 转换成 一个map
+     * use {@link #copier(Object, Object)}
      * @param bean java bean
      * @return {@link ToMap}
      */
+    @Deprecated
     public static <T> ToMap<T> toMapper(T bean) { return new ToMap<>(bean); }
+
+
+    /**
+     * 对象 复制器
+     * @param src 源对象
+     * @param target 目标对象
+     * @param <S> 源对象类型
+     * @param <T> 目标对象类型
+     * @return {@link Copier<S, T>}
+     */
+    public static <S, T> Copier<S, T> copier(S src, T target) { return new Copier<S, T>(src, target); }
 }

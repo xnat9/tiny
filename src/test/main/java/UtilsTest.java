@@ -6,10 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,30 +98,6 @@ public class UtilsTest {
         );
         System.out.println(
                 Utils.buildUrl("http://xnatural.cn:9090/test?test=aaa", params)
-        );
-    }
-
-
-    @Test
-    void toMap() {
-        log.info(
-                Utils.toMapper(new Object() {
-                    public String p1 = "xxx";
-                    Integer p2 = 1;
-                    String p3 = "p3";
-                    public String p4 = "p4";
-                    public long time = System.currentTimeMillis();
-                    public String p5;
-                    public BigInteger p6 = BigInteger.valueOf(6);
-
-                    public Integer getP2() { return p2; }
-                }).addConverter("time", o -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date((long) o)))
-                        .addConverter("p4", "pp4", o -> "pp4")
-                        .aliasProp("p1", "prop1")
-                        .add("pp", "pp")
-                        // .showClassProp()
-                        .ignoreNull()
-                        .build().toString()
         );
     }
 }
