@@ -55,6 +55,12 @@ public class UtilsTest {
     }
 
 
+    @Test
+    void toTest() {
+        log.info("to Integer: " + Utils.to(1, Integer.class));
+        log.info("to String: " + Utils.to("s", String.class));
+    }
+
 
     @Test
     void http() throws Exception {

@@ -148,9 +148,11 @@ public class Utils {
     public static <T> T to(Object v, Class<T> type) {
         if (type == null) return (T) v;
         if (v == null) return null;
+        else if (type.isAssignableFrom(v.getClass())) return (T) v;
         else if (String.class.equals(type)) return (T) v.toString();
         else if (Boolean.class.equals(type) || boolean.class.equals(type)) return (T) Boolean.valueOf(v.toString());
         else if (Short.class.equals(type) || short.class.equals(type)) return (T) Short.valueOf(v.toString());
+        else if (Byte.class.equals(type) || byte.class.equals(type)) return (T) Byte.valueOf(v.toString());
         else if (Integer.class.equals(type) || int.class.equals(type)) return (T) Integer.valueOf(v.toString());
         else if (BigInteger.class.equals(type)) return (T) new BigInteger(v.toString());
         else if (Long.class.equals(type) || long.class.equals(type)) return (T) Long.valueOf(v.toString());
