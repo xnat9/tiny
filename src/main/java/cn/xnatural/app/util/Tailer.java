@@ -15,10 +15,10 @@ import java.util.function.Function;
  */
 public class Tailer {
     protected static final Logger log = LoggerFactory.getLogger(Tailer.class);
-    private Thread                    th;
-    private boolean                   stopFlag;
-    private Function<String, Boolean> lineFn;
-    private Executor                  exec;
+    protected Thread                    th;
+    protected boolean                   stopFlag;
+    protected Function<String, Boolean> lineFn;
+    protected Executor                  exec;
 
     /**
      * 处理输出行

@@ -30,25 +30,25 @@ public class Copier<S, T> {
      * 忽略空属性
      * 默认不忽略空值属性
      */
-    private boolean ignoreNull = false;
+    protected boolean ignoreNull = false;
     /**
      * 客外属性源 计算器
      */
-    private Map<String, BiFunction<S, T, Object>> valueGetter;
+    protected Map<String, BiFunction<S, T, Object>> valueGetter;
     /**
      * 属性值转换器配置
      * 源属性名 -> 值转换函数
      */
-    private Map<String, Function> valueConverter;
+    protected Map<String, Function> valueConverter;
     /**
      * 属性别名
      * 目标属性名 -> 源属性名
      */
-    private Map<String, String> mapProps;
+    protected Map<String, String> mapProps;
     /**
      * 忽略属性
      */
-    private final Set<String> ignore = new HashSet<>(Arrays.asList("class"));
+    protected final Set<String> ignore = new HashSet<>(Arrays.asList("class"));
 
 
     public Copier(S src, T target) {
