@@ -11,8 +11,10 @@ import static cn.xnatural.app.Utils.iterateMethod;
 
 /**
  * 转换成Map
+ * use {@link Copier}
  * @param <T>
  */
+@Deprecated
 public class ToMap<T> {
     private T                                  bean;
     private Map<String, String> propAlias;

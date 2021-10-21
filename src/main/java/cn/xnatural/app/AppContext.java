@@ -289,7 +289,7 @@ public class AppContext {
 
     /**
      * 添加对象源
-     * {@link #ep} 会找出source对象中所有其暴露的功能. 即: 用 @EL 标注的方法
+     * {@link #ep} 会找出source对象中所有其暴露的功能. 即: 用 {@link EL} 标注的方法
      * 注: 为每个对象源都配一个 name 属性标识
      * @param source bean 对象
      * @param name bean 名字
