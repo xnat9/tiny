@@ -59,9 +59,9 @@ endif
 # 安装教程
 ```xml
 <dependency>
-    <groupId>cn.xnatural.app</groupId>
+    <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.10</version>
 </dependency>
 ```
 
@@ -728,11 +728,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [Demo(scala)](https://gitee.com/xnat/tinyscalademo)
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
-# 1.0.10 ing
-- [x] maven release 统一group: xnatural.cn
-- [x] 代码优化: Httper, Tailer从Utils中独立出来
-- [x] DB: 数据库操作工具
-- [x] Copier: 对象拷贝工具
+# 1.0.11 ing
 - [ ] CacheSrv accessTime
 
 # 参与贡献

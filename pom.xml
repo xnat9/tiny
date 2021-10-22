@@ -7,7 +7,7 @@
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.10</version>
+    <version>1.0.11</version>
 
     <name>app</name>
     <description>小巧的java应用微内核框架</description>
