@@ -60,7 +60,7 @@ public class Copier<S, T> {
     /**
      * 忽略属性
      * @param propNames 属性名
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> ignore(String... propNames) {
         if (propNames == null) return this;
@@ -70,7 +70,7 @@ public class Copier<S, T> {
 
     /**
      * 包含 class 属性
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> showClassProp() { ignore.remove("class"); return this; }
 
@@ -79,7 +79,7 @@ public class Copier<S, T> {
      * {@link #ignore} 也能控制别名
      * @param srcPropName 源属性名
      * @param targetPropName 目标对象属性名
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> mapProp(String srcPropName, String targetPropName) {
         if (targetPropName == null || targetPropName.isEmpty()) throw new IllegalArgumentException("Param targetPropName must not empty");
@@ -93,7 +93,7 @@ public class Copier<S, T> {
     /**
      * 忽略空值属性
      * @param ignoreNull 是否忽略
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> ignoreNull(boolean ignoreNull) { this.ignoreNull = ignoreNull; return this; }
 
@@ -102,7 +102,7 @@ public class Copier<S, T> {
      * NOTE: 会优先于 源对象中的属性
      * @param srcPropName 属性源名
      * @param valuer 属性值计算器
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> add(String srcPropName, Supplier valuer) {
         if (valuer == null) throw new IllegalArgumentException("Param valuer required");
@@ -114,7 +114,7 @@ public class Copier<S, T> {
      * NOTE: 会优先于 源对象中的属性
      * @param srcPropName 属性源名
      * @param valuer 属性值计算器
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> add(String srcPropName, BiFunction<S, T, Object> valuer) {
         if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName must not empty");
@@ -128,7 +128,7 @@ public class Copier<S, T> {
      * 添加属性值转换器
      * @param srcPropName 源属性名
      * @param converter 值转换器
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public Copier<S, T> addConverter(String srcPropName, Function converter) {
         if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName must not empty");
