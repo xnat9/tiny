@@ -104,7 +104,7 @@ public class Copier<S, T> {
      * @param valuer 属性值计算器
      * @return {@link Copier}
      */
-    public Copier<S, T> add(String srcPropName, Supplier valuer) {
+    public Copier<S, T> add(String srcPropName, Supplier<Object> valuer) {
         if (valuer == null) throw new IllegalArgumentException("Param valuer required");
         return add(srcPropName, (s, t) -> valuer.get());
     }
@@ -147,17 +147,23 @@ public class Copier<S, T> {
         if (target == null || src == null) return target;
         // map 转 map
         if (src instanceof Map && target instanceof Map) {
-            for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet()) {
+            // 属性赋值函数
+            final Consumer<String> setFn = srcPropName -> {
+                if (srcPropName == null || ignore.contains(srcPropName)) return;
                 try {
-                    String srcPropName = entry.getKey().toString();
-                    if (ignore.contains(srcPropName)) continue;
                     String targetPropName = mapProps != null && mapProps.containsKey(srcPropName) ? mapProps.get(srcPropName) : srcPropName;
-                    if (ignore.contains(targetPropName)) continue;
+                    if (ignore.contains(targetPropName)) return;
                     Object v = get(srcPropName);
-                    if (ignoreNull && v == null) continue;
+                    if (ignoreNull && v == null) return;
                     ((Map) target).put(targetPropName, v);
-                } catch (Exception e) { }
+                } catch (Exception ex) { /** ignore **/ }
+            };
+            // 遍历源属性集map
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) src).entrySet()) {
+                setFn.accept(entry.getKey().toString());
             }
+            // 遍历 额外属性集
+            valueGetter.forEach((propName, getter) -> setFn.accept(propName));
         }
         // javabean 转 map
         else if (target instanceof Map) javabeanToMap();
@@ -185,6 +191,8 @@ public class Copier<S, T> {
         iterateMethod(src.getClass(), method -> setFn.accept(getGetterName(method)));
         // 遍历 public 字段
         iterateField(src.getClass(), field -> setFn.accept(getPropFieldName(field)));
+        // 遍历 额外属性集
+        valueGetter.forEach((propName, getter) -> setFn.accept(propName));
     }
 
 
