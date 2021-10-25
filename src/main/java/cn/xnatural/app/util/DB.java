@@ -30,12 +30,21 @@ public class DB implements AutoCloseable {
     protected static final ThreadLocal<Connection> txConn = new ThreadLocal<>();
 
     /**
-     * 创建
+     * 创建一个 {@link DB}
      * @param dataSource 外部数据源
      */
     public DB(DataSource dataSource) {
         if (dataSource == null) throw new IllegalArgumentException("Param dataSource required");
         this.dataSource = dataSource;
+    }
+
+    /**
+     * 创建一个 {@link DB}
+     * @param dsAttr 属性集
+     */
+    public DB(Map<String, Object> dsAttr) {
+        if (dsAttr == null) throw new IllegalArgumentException("Param dsAttr required");
+        this.dsAttr.putAll(dsAttr);
     }
 
     /**
