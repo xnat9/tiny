@@ -1,4 +1,5 @@
 import cn.xnatural.app.AppContext;
+import cn.xnatural.app.Inject;
 import cn.xnatural.app.ServerTpl;
 import cn.xnatural.app.util.DB;
 import cn.xnatural.enet.event.EL;
@@ -15,18 +16,17 @@ public class AppTest {
         new AppContext()
                 .addSource(
                         new ServerTpl("server1") {
+                            @Inject DB db;
+
                             @EL(name = "sys.starting")
                             void start() { log.info("{} start", name); }
 
                             @EL(name = "sys.started", async = true)
                             void started() {
-                                log.info("测试sql: " + bean(DB.class).single("select count(1) from test", Integer.class));
+                                log.info("测试sql: " + db.single("select count(1) from test", Integer.class));
                             }
                         }
-                        , sched()
-                        , web()
-                        , DB()
-                        , remoter()
+                        , sched(), web(), db(), remoter()
                         , testExec()
                 ).start();
     }
@@ -35,14 +35,14 @@ public class AppTest {
     /**
      * 创建数据库操作
      */
-    static ServerTpl DB() {
+    static ServerTpl db() {
         return new ServerTpl("db_local") { //数据库
             DB DB;
             @EL(name = "sys.starting", async = true)
             void start() {
                 DB = new DB(getStr("url", null));
                 attrs().forEach((k, v) -> DB.dsAttr(k, v));
-                exposeBean(DB);
+                exposeBean(DB, "db_local");
                 ep.fire(name + ".started");
             }
 
@@ -116,7 +116,7 @@ public class AppTest {
             void start() {
                 remoter = new Remoter(app().name(), app().id(), attrs(), exec(), ep, bean(Sched.class));
                 exposeBean(remoter);
-                exposeBean(remoter.getAioClient());
+                exposeBean(remoter.getAioClient(), "aioClient");
                 ep.fire(name + ".started");
             }
 
@@ -134,9 +134,11 @@ public class AppTest {
 
     static ServerTpl testExec() {
         return new ServerTpl("testExec") {
+            @Inject Sched sched;
+
             @EL(name = "sys.started", async = true)
             void test() {
-                bean(Sched.class).fixedDelay(Duration.ofSeconds(1), () -> {
+                sched.fixedDelay(Duration.ofSeconds(1), () -> {
                     async(() -> {
                         try {
                             Thread.sleep(500 * (new Random().nextInt(30) + 1));

@@ -82,8 +82,8 @@ public class Copier<S, T> {
      * @return {@link Copier}
      */
     public Copier<S, T> mapProp(String srcPropName, String targetPropName) {
-        if (targetPropName == null || targetPropName.isEmpty()) throw new IllegalArgumentException("Param targetPropName must not empty");
-        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName must not empty");
+        if (targetPropName == null || targetPropName.isEmpty()) throw new IllegalArgumentException("Param targetPropName required");
+        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName required");
         if (mapProps == null) mapProps = new HashMap<>(7);
         mapProps.put(targetPropName, srcPropName);
         mapProps.put(srcPropName, targetPropName);
@@ -117,7 +117,7 @@ public class Copier<S, T> {
      * @return {@link Copier}
      */
     public Copier<S, T> add(String srcPropName, BiFunction<S, T, Object> valuer) {
-        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName must not empty");
+        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName required");
         if (valuer == null) throw new IllegalArgumentException("Param valuer required");
         if (valueGetter == null) valueGetter = new HashMap<>(7);
         valueGetter.put(srcPropName, valuer);
@@ -131,7 +131,7 @@ public class Copier<S, T> {
      * @return {@link Copier}
      */
     public Copier<S, T> addConverter(String srcPropName, Function converter) {
-        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName must not empty");
+        if (srcPropName == null || srcPropName.isEmpty()) throw new IllegalArgumentException("Param srcPropName required");
         if (converter == null) throw new IllegalArgumentException("Param converter required");
         if (valueConverter == null) valueConverter = new HashMap<>(7);
         valueConverter.put(srcPropName, converter);

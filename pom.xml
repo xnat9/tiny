@@ -7,7 +7,7 @@
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.11</version>
+    <version>1.1.0</version>
 
     <name>app</name>
     <description>小巧的java应用微内核框架</description>
@@ -18,11 +18,6 @@
             <groupId>cn.xnatural.enet</groupId>
             <artifactId>enet-event</artifactId>
             <version>0.0.22</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-            <version>1</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -50,13 +45,13 @@
 <!--        <dependency>-->
 <!--            <groupId>cn.xnatural</groupId>-->
 <!--            <artifactId>jpa</artifactId>-->
-<!--            <version>1.0.7</version>-->
+<!--            <version>1.0.8</version>-->
 <!--            <scope>test</scope>-->
 <!--        </dependency>-->
         <dependency>
-            <groupId>cn.xnatural.http</groupId>
+            <groupId>cn.xnatural</groupId>
             <artifactId>http</artifactId>
-            <version>1.0.9</version>
+            <version>1.0.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -60,7 +60,7 @@ public class Devourer {
      * @param exec 线程池
      */
     public Devourer(String key, Executor exec) {
-        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key not empty");
+        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key required");
         if (exec == null) throw new IllegalArgumentException("Param executor required");
         this.key = key;
         this.exec = exec;
@@ -71,7 +71,7 @@ public class Devourer {
      * @param key 对列标识
      */
     public Devourer(String key) {
-        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key not empty");
+        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key required");
         this.key = key;
         this.exec = new ThreadPoolExecutor(4, 8, 2L, TimeUnit.HOURS,
                 new LinkedBlockingQueue(100000),

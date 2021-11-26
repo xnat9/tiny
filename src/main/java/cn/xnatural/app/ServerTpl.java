@@ -6,7 +6,6 @@ import cn.xnatural.enet.event.EP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,24 +31,22 @@ public class ServerTpl {
     @Inject protected EP ep;
     private final Lazier<AppContext> _app = new Lazier<>(() -> bean(AppContext.class));
     private final Lazier<ExecutorService> _exec = new Lazier<>(() -> bean(ExecutorService.class));
-    //private final LazySupplier<Map<String, Object>> _config = new LazySupplier<>(() -> new HashMap<>());
 
 
     public ServerTpl(String name) {
-        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Param name not empty");
-        if (name.contains("$")) throw new IllegalArgumentException("Param name not allow contains '$'");
+        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Param name required");
         this.name = name;
     }
     public ServerTpl() {
-        String tmp = getClass().getName().contains("$") ? getClass().getName().replace("$", "_") : getClass().getSimpleName();
-        this.name = Character.toLowerCase(tmp.charAt(0)) + tmp.substring(1);
+        String n = getClass().getName().contains("$") ? getClass().getName() : getClass().getSimpleName();
+        this.name = Character.toLowerCase(n.charAt(0)) + (n.length() > 1 ? n.substring(1) : "");
     }
 
     /**
      * bean 容器. {@link #localBean}
      */
     protected Map<String, Object> beanCtx;
-    @EL(name = {"bean.get", "${name}.bean.get"}, async = false)
+    @EL(name = {"bean.get", "${name}.bean.get"})
     protected <T> T localBean(EC ec, Class<T> bType, String bName) {
         //  已经找到结果了, 就直接返回
         if (ec != null && ec.result != null) return (T) ec.result;
@@ -159,12 +156,11 @@ public class ServerTpl {
         if (bean == null) return this;
         if (beanCtx == null) beanCtx = new HashMap<>(7);
         if (names == null || names.length < 1) {
-            names = new String[]{
-                    bean.getClass().getName().contains("$") ? bean.getClass().getName().replace("$", "_") : bean.getClass().getSimpleName()
-            };
+            String n = bean.getClass().getName().contains("$") ? bean.getClass().getName() : bean.getClass().getSimpleName();
+            names = new String[]{Character.toLowerCase(n.charAt(0)) + (n.length() > 1 ? n.substring(1) : "")};
         }
         for (String n : names) {
-            if (beanCtx.get(n) != null) log.warn("override exist bean name '{}'", n);
+            if (beanCtx.get(n) != null) log.warn("Override exist bean name '{}'", n);
             beanCtx.put(n, bean);
         }
         ep.addListenerSource(bean); _app.get().inject(bean);

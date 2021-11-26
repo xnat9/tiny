@@ -78,7 +78,7 @@ public class DB implements AutoCloseable {
      * @param maxActive 最大活动连接
      */
     public DB(String jdbcUrl, String username, String password, Integer minIdle, Integer maxActive) {
-        if (jdbcUrl == null || jdbcUrl.isEmpty()) throw new IllegalArgumentException("Param jdbcUrl must not empty");
+        if (jdbcUrl == null || jdbcUrl.isEmpty()) throw new IllegalArgumentException("Param jdbcUrl required");
         if (minIdle == null || minIdle < 0) throw new IllegalArgumentException("Param minIdle must >= 0");
         if (maxActive == null || maxActive <= 0) throw new IllegalArgumentException("Param maxActive must > 0");
         dsAttr.put("url", jdbcUrl); dsAttr.put("jdbcUrl", jdbcUrl);

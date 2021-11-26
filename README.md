@@ -363,28 +363,19 @@ app.addSource(new ServerTpl("服务名") {
 })
 ```
 
-### bean注入:按类型匹配 @Inject
+### bean注入 @Inject(name = "beanName")
+> 注入匹配规则: (已经存在值则不需要再注入)
+> > 1. 如果 @Inject name 没配置
+> > > 先按 字段类型 和 字段名 匹配, 如无匹配 再按 字段类型 匹配
+> > 2. 则按 字段类型 和 @Inject(name = "beanName") beanName 匹配
 ```java
 app.addSource(new ServerTpl() {
-    @Inject Repo repo;  //自动注入, 按类型
+    @Inject Repo repo;  //自动注入
 
     @EL(name = "sys.started", async = true)
     void init() {
         List<Map> rows = repo.rows("select * from test")
         log.info("========= {}", rows);
-    }
-});
-```
-
-### bean注入:按类型和名字全匹配 @Named
-```java
-app.addSource(new ServerTpl("testNamed") {
-    //自动注入, 按类型和名字, @Named 有值则取 @Named 的值, 否则取 字段的名字
-    @Named ServerTpl server1;
-
-    @EL(name = "sys.started", async = true)
-    void init() {
-        log.info("{} ========= {}", name, server1.getName());
     }
 });
 ```
@@ -800,7 +791,9 @@ final Lazier<String> _id = new Lazier<>(() -> {
 </dependency>
 ```
 
-# 1.0.11 ing
+# 1.1.0 ing
+- [x] fix(Copier): copy map 漏了额外属性源
+- [x] feat(Inject): 新增注解 @Inject, 去掉 javax.inject
 - [ ] CacheSrv accessTime
 
 # 参与贡献

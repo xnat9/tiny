@@ -6,8 +6,6 @@ import cn.xnatural.enet.event.EP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Named;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
@@ -61,7 +59,7 @@ public class AppContext {
     /**
      * 初始化一个 {@link java.util.concurrent.ThreadPoolExecutor}
      * NOTE: 如果线程池在不停的创建线程, 有可能是因为 提交的 Runnable 的异常没有被处理.
-     * see:  {@link java.util.concurrent.ThreadPoolExecutor#runWorker(java.util.concurrent.ThreadPoolExecutor.Worker)} 这里面当有异常抛出时 1128行代码 {@link java.util.concurrent.ThreadPoolExecutor#processWorkerExit(java.util.concurrent.ThreadPoolExecutor.Worker, boolean)}
+     * see:  {@link java.util.concurrent.ThreadPoolExecutor#runWorker} 这里面当有异常抛出时 1128行代码 {@link java.util.concurrent.ThreadPoolExecutor#processWorkerExit}
      */
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ...");
@@ -296,13 +294,13 @@ public class AppContext {
      * @return {@link AppContext}
      */
     public AppContext addSource(Object source, String name) {
-        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Param name not empty");
+        if (name == null || name.isEmpty()) throw new IllegalArgumentException("Param name required");
         if (source == null) throw new IllegalArgumentException("Param source required");
-        if ("sys".equalsIgnoreCase(name) || "env".equalsIgnoreCase(name) || "log".equalsIgnoreCase(name)) {
-            log.error("Name property cannot equal 'sys', 'env' or 'log' . source: {}", source); return this;
+        if ("sys".equalsIgnoreCase(name) || "env".equalsIgnoreCase(name) || "log".equalsIgnoreCase(name) || "bean".equalsIgnoreCase(name)) {
+            log.error("Name not allowed [sys, env, log, bean]. source: {}", source); return this;
         }
         if (sourceMap.containsKey(name)) {
-            log.error("Name property '{}' already exist in source: {}", name, sourceMap.get(name)); return this;
+            log.error("Already exist bean '{}': {}", name, sourceMap.get(name)); return this;
         }
         sourceMap.put(name, source);
         inject(source); ep().addListenerSource(source);
@@ -319,7 +317,7 @@ public class AppContext {
      */
     public AppContext addSource(Object... sources) {
         for (Object source : sources) {
-            addSource(source, source instanceof ServerTpl ? ((ServerTpl) source).name : getClass().getName().contains("$") ? getClass().getSuperclass().getSimpleName() : getClass().getSimpleName());
+            addSource(source, source instanceof ServerTpl ? ((ServerTpl) source).name : source.getClass().getName().contains("$") ? source.getClass().getName() : source.getClass().getSimpleName());
         }
         return this;
     }
@@ -333,7 +331,7 @@ public class AppContext {
      * @return {@link Devourer}
      */
     public Devourer queue(String qName, Runnable fn) {
-        if (qName == null || qName.isEmpty()) throw new IllegalArgumentException("Param qName not empty");
+        if (qName == null || qName.isEmpty()) throw new IllegalArgumentException("Param qName required");
         Devourer devourer = queues.get(qName);
         if (devourer == null) {
             synchronized (queues) {
@@ -350,47 +348,36 @@ public class AppContext {
 
 
     /**
-     * 为bean对象中的{@link javax.inject.Inject}注解字段注入对应的bean对象
+     * 为bean对象中的{@link Inject}注解字段注入对应的bean对象
      * @param source bean
      */
-    @EL(name = "inject", async = false)
+    @EL(name = "inject")
     public void inject(Object source) {
         Utils.iterateField(source.getClass(), (field) -> {
             Inject inject = field.getAnnotation(Inject.class);
-            if (inject != null) {
-                try {
-                    field.setAccessible(true);
-                    Object v = field.get(source);
-                    if (v != null) return; // 已经存在值则不需要再注入
+            if (inject == null) return;
+            try {
+                field.setAccessible(true);
+                Object v = field.get(source);
+                if (v != null) return; // 已经存在值则不需要再注入
 
-                    // 取值
-                    if (EP.class.isAssignableFrom(field.getType())) v = wrapEpForSource(source);
-                    else v = bean(field.getType(), null); // 全局获取bean对象
-
-                    if (v == null) return;
-                    field.set(source, v);
-                    log.trace("Inject @Inject field '{}' for object '{}'", field.getName(), source);
-                } catch (Exception ex) {
-                    log.error("Inject @Inject field '" + field.getName() + "' error!", ex);
+                // 取值
+                if (EP.class.isAssignableFrom(field.getType())) v = wrapEpForSource(source);
+                else {
+                    if (inject.name().isEmpty()) {
+                        v = bean(field.getType(), field.getName());
+                        if (v == null) v = bean(field.getType(), null);
+                    }
+                    else {
+                        v = bean(field.getType(), inject.name());
+                    }
                 }
-            }
-            Named named = field.getAnnotation(Named.class);
-            if (named != null) {
-                try {
-                    field.setAccessible(true);
-                    Object v = field.get(source);
-                    if (v != null) return; // 已经存在值则不需要再注入
 
-                    // 取值
-                    if (EP.class.isAssignableFrom(field.getType())) v = wrapEpForSource(source);
-                    else v = bean(field.getType(), named.value().isEmpty() ? field.getName() : named.value()); // 全局获取bean对象
-
-                    if (v == null) return;
-                    field.set(source, v);
-                    log.trace("Inject @Named field '{}' for object '{}'", field.getName(), source);
-                } catch (Exception ex) {
-                    log.error("Inject @Named field '" + field.getName() + "' error!", ex);
-                }
+                if (v == null) return;
+                field.set(source, v);
+                log.trace("Inject field '{}' for object '{}'", field.getName(), source);
+            } catch (Exception ex) {
+                log.error("Inject field '" + field.getName() + "' error!", ex);
             }
         });
     }
