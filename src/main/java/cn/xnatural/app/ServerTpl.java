@@ -46,7 +46,7 @@ public class ServerTpl {
      * bean 容器. {@link #localBean}
      */
     protected Map<String, Object> beanCtx;
-    @EL(name = {"bean.get", "${name}.bean.get"})
+    @EL(name = {"bean.get", "{name}.bean.get"})
     protected <T> T localBean(EC ec, Class<T> bType, String bName) {
         //  已经找到结果了, 就直接返回
         if (ec != null && ec.result != null) return (T) ec.result;

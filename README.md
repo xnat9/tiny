@@ -794,6 +794,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 # 1.1.0 ing
 - [x] fix(Copier): copy map 漏了额外属性源
 - [x] feat(Inject): 新增注解 @Inject, 去掉 javax.inject
+- [x] upgrade: enet:0.0.23
 - [ ] CacheSrv accessTime
 
 # 参与贡献

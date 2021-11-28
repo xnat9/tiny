@@ -399,7 +399,7 @@ public class AppContext {
      * @param bName bean 对象名字
      * @return bean 对象
      */
-    @EL(name = {"bean.get", "sys.bean.get"}, async = false, order = -1f)
+    @EL(name = {"bean.get", "sys.bean.get"}, order = -1f)
     protected <T> T localBean(EC ec, Class<T> bType, String bName) {
         if (ec != null && ec.result != null) return (T) ec.result; // 已经找到结果了, 就直接返回
 

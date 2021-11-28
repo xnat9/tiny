@@ -15,14 +15,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>cn.xnatural.enet</groupId>
-            <artifactId>enet-event</artifactId>
-            <version>0.0.22</version>
+            <groupId>cn.xnatural</groupId>
+            <artifactId>enet</artifactId>
+            <version>0.0.23</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.6</version>
+            <version>1.2.7</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
