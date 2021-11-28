@@ -87,6 +87,15 @@ partition "执行器/线程池" {
 -->
 ![Image text](https://www.plantuml.com/plantuml/png/fPFFgjD05CRtynI7h995a6JPmEM2-WAw51UvPcg7cvvSaubIH71puVRwfwwiOi4MAgqBiRep1NsPJcBVmgHd6cXhIyNLTBv-ypjplZCvJQGVoxGTikHSu8KV-ssu6M4Wf8ZmDWPtPIVaq0e5SfPSX48o0B3ljKGGSBnldrJRHZvufQv7u7Xa0V-XB_20qJtMY1xZ600LPg89vc8-B_ymxwI8_bd8BGjaYoEOwkiFTTNFkvFVevVg_TGgASqeFcTGmK_WKSfJRXgEONahgN6BFuxIcCVWQ252Rfzrx7BnreVotfj5DWPFi-YsMqHtb-XgGJw9AcAv_1CHTuce1Qnu-3SQnu3wvM72jthtamu-q0IA3vpT6-nnkaSxSVCU68WcO-M3agkd14Ozcnj5zgkOliY_3GruoW0EZJKVT8lFsRB_dSvKOwsRsqZ1qqA3ZDIXTb1b86MhbmC8z_yHk0zHvmIW9qOvrD5G0AQQzHRPwrhD1y_LU6AjgwYh3sgUvMzdPAYhKwbgItXJNG_LvQVwNF6bgtvUBjzzB3yPSj6urkipTbh-IDlX7m00)
 
+# 安装教程
+```xml
+<dependency>
+    <groupId>cn.xnatural</groupId>
+    <artifactId>tiny</artifactId>
+    <version>1.1.0</version>
+</dependency>
+```
+
 # 初始化
 ```java
 // 创建一个应用
@@ -781,15 +790,6 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [Demo(scala)](https://gitee.com/xnat/tinyscalademo)
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
-
-# 安装教程
-```xml
-<dependency>
-    <groupId>cn.xnatural</groupId>
-    <artifactId>tiny</artifactId>
-    <version>1.1.0</version>
-</dependency>
-```
 
 # 1.1.1 ing
 - [ ] CacheSrv accessTime
