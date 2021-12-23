@@ -163,7 +163,7 @@ public class Copier<S, T> {
                 setFn.accept(entry.getKey().toString());
             }
             // 遍历 额外属性集
-            valueGetter.forEach((propName, getter) -> setFn.accept(propName));
+            if (valueGetter != null) valueGetter.forEach((propName, getter) -> setFn.accept(propName));
         }
         // javabean 转 map
         else if (target instanceof Map) javabeanToMap();
@@ -192,7 +192,7 @@ public class Copier<S, T> {
         // 遍历 public 字段
         iterateField(src.getClass(), field -> setFn.accept(getPropFieldName(field)));
         // 遍历 额外属性集
-        valueGetter.forEach((propName, getter) -> setFn.accept(propName));
+        if (valueGetter != null) valueGetter.forEach((propName, getter) -> setFn.accept(propName));
     }
 
 
