@@ -92,7 +92,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
@@ -791,9 +791,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.1 ing
-- [x] fix: Copier ntp
-- [x] refactor: drop ToMap, use Copier
+# 1.1.2 ing
 - [ ] CacheSrv accessTime
 
 # 参与贡献
