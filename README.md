@@ -793,7 +793,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.1 ing
 - [x] fix: Copier ntp
-- [ ] refactor: drop ToMap, use Copier
+- [x] refactor: drop ToMap, use Copier
 - [ ] CacheSrv accessTime
 
 # 参与贡献

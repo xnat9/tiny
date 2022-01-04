@@ -10,7 +10,7 @@
     <version>1.1.1</version>
 
     <name>tiny</name>
-    <description>小巧的java应用微内核框架</description>
+    <description>小巧的java应用微内核并发框架</description>
     <url>https://gitee.com/xnat/tiny</url>
 
     <dependencies>

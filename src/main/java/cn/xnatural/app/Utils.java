@@ -3,7 +3,6 @@ package cn.xnatural.app;
 import cn.xnatural.app.util.Copier;
 import cn.xnatural.app.util.Httper;
 import cn.xnatural.app.util.Tailer;
-import cn.xnatural.app.util.ToMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,16 +237,6 @@ public class Utils {
      * @return {@link Tailer}
      */
     public static Tailer tailer() { return new Tailer(); }
-
-
-    /**
-     * 把一个bean 转换成 一个map
-     * use {@link #copier(Object, Object)}
-     * @param bean java bean
-     * @return {@link ToMap}
-     */
-    @Deprecated
-    public static <T> ToMap<T> toMapper(T bean) { return new ToMap<>(bean); }
 
 
     /**
