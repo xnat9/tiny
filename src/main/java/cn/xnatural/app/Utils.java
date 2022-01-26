@@ -6,8 +6,7 @@ import cn.xnatural.app.util.Tailer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -245,7 +244,41 @@ public class Utils {
      * @param target 目标对象
      * @param <S> 源对象类型
      * @param <T> 目标对象类型
-     * @return {@link Copier<S, T>}
+     * @return {@link Copier}
      */
     public static <S, T> Copier<S, T> copier(S src, T target) { return new Copier<S, T>(src, target); }
+
+
+    /**
+     * io 流 copy
+     * <code>
+     *     try (InputStream is = new FileInputStream("d:/tmp/1.txt"); OutputStream os = new FileOutputStream("d:/tmp/2.txt")) {
+     *         Utils.ioCopy(is, os);
+     *     }
+     * </code>
+     * @param is 输入流
+     * @param os 输出流
+     * @param bufSize 每次读取字节大小
+     * @return 总复制大小
+     * @throws IOException {@link OutputStream#write(byte[], int, int)}
+     */
+    public static long ioCopy(InputStream is, OutputStream os, Integer bufSize) throws IOException {
+        byte[] buf = new byte[bufSize == null || bufSize < 1 ? 1024 : bufSize];
+        long count = 0;
+        int n = 0;
+        while (-1 != (n = is.read(buf))) {
+            os.write(buf, 0, n);
+            count += n;
+        }
+        return count;
+    }
+
+    /**
+     * io 流 copy
+     * @param is 输入流
+     * @param os 输出流
+     * @return 总复制大小
+     * @throws IOException {@link OutputStream#write(byte[], int, int)}
+     */
+    public static long ioCopy(InputStream is, OutputStream os) throws IOException {return ioCopy(is, os, 4096);}
 }

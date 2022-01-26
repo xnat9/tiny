@@ -4,8 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -105,6 +104,14 @@ public class UtilsTest {
         System.out.println(
                 Utils.buildUrl("http://xnatural.cn:9090/test?test=aaa", params)
         );
+    }
+
+
+    @Test
+    void ioCopy() throws Exception {
+        try (InputStream is = new FileInputStream("d:/tmp/1.txt"); OutputStream os = new FileOutputStream("d:/tmp/2.txt")) {
+            Utils.ioCopy(is, os);
+        }
     }
 }
 
