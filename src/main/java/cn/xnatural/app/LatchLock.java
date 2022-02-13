@@ -28,7 +28,18 @@ public class LatchLock {
 
 
     /**
-     * 获取锁
+     * 获取一个锁
+     * <pre>
+     * final LatchLock lock = new LatchLock();
+     * lock.limit(3); // 设置并发限制. 默认为1
+     * if (lock.tryLock()) { // 尝试获取一个锁
+     *     try {
+     *         // 被执行的代码块
+     *     } finally {
+     *         lock.release(); // 释放一个锁
+     *     }
+     * }
+     * </pre>
      */
     public boolean tryLock() {
         int latch = latchSize.get();
@@ -43,9 +54,17 @@ public class LatchLock {
 
     /**
      * 释放一个锁
+     * 一般是 {@link #tryLock()} 成功后 调一次
      * @return 释放后当前锁的个数
      */
-    public int release() { return latchSize.decrementAndGet(); }
+    public int release() {
+        int latch = latchSize.get();
+        if (latch <= 0) return 0;
+        if (latchSize.compareAndSet(latch, latch - 1)) {
+            return latch - 1;
+        }
+        return latchSize.get();
+    }
 
 
     /**

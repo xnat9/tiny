@@ -794,7 +794,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 # 1.1.2 ing
 - [x] upgrade: logback:1.2.10
 - [x] feat: utils.ioCopy io流复制方法
-- [ ] CacheSrv accessTime
+- [ ] feat: CacheSrv 过期函数
+- [ ] feat: Devourer 速度控制
 
 # 参与贡献
 
