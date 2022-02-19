@@ -89,9 +89,9 @@
     </licenses>
 
     <scm>
-        <url>https://gitee.com/xnat/app</url>
-        <connection>https://gitee.com/xnat/app.git</connection>
-        <developerConnection>https://gitee.com/xnat/app</developerConnection>
+        <url>https://gitee.com/xnat/tiny</url>
+        <connection>https://gitee.com/xnat/tiny.git</connection>
+        <developerConnection>https://gitee.com/xnat/tiny</developerConnection>
     </scm>
 
     <developers>
