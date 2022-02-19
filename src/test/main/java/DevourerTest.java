@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -94,5 +97,41 @@ public class DevourerTest {
             });
         }
         Thread.sleep(20 * 1000);
+    }
+
+
+    @Test
+    void testSpeed() throws Exception {
+        Devourer devourer = new Devourer();
+        devourer.speed("8/s");
+
+        ExecutorService exec = Executors.newFixedThreadPool(2, new ThreadFactory() {
+            final AtomicInteger i = new AtomicInteger();
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r,"t-" + i.incrementAndGet());
+            }
+        });
+
+        final AtomicBoolean stop = new AtomicBoolean(false);
+
+        exec.execute(() -> {
+            while (!stop.get()) {
+                devourer.offer(() -> {
+                    log.info("=====left: " + devourer.getWaitingCount());
+                });
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    log.error("offer error", e);
+                }
+            }
+        });
+
+
+        Thread.sleep(1000 * 60);
+        stop.set(true);
+        Thread.sleep(1000 * 20);
+        exec.shutdown();
     }
 }

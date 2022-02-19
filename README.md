@@ -466,6 +466,18 @@ queue("save").offer(() -> {
 ```java
 queue("save").parallel(2)
 ```
+#### 执行速度控制
+把任务按速度均匀分配在时间线上执行  
+支持: 每秒(10/s), 每分(10/m), 每小时(10/h), 每天(10/d)
+```java
+// 例: 按每分钟执行30个任务的频率
+queue("save").speed("30/m")
+```
+```java
+// 清除速度控制(立即执行)
+queue("save").speed(null)
+```
+
 #### 队列 暂停/恢复
 ```java
 // 暂停执行, 一般用于发生错误时
@@ -717,7 +729,9 @@ bean(CacheSrv).set("缓存key", "缓存值", record -> {
 });
 // 3. 获取缓存
 bean(CacheSrv).get("缓存key");
-// 4. 手动删除
+// 4. 获取缓存值, 并更新缓存时间(即从现在开始重新计算过期时间)
+bean(CacheSrv).getAndUpdate("缓存key");
+// 5. 手动删除
 bean(CacheSrv).remove("缓存key");
 ```
 

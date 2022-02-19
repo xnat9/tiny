@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,6 +53,11 @@ public class Devourer {
      * 使用最后入队想任务/任务最后有效 {@link #useLast(boolean)}
      */
     protected boolean useLast;
+    /**
+     * 速度限制
+     * 平均每个占用执行时间
+     */
+    protected Long perSpend;
 
 
     /**
@@ -122,6 +128,7 @@ public class Devourer {
         // 3.必须保证不能出现情况: waiting 对列中有值, 但没有被执行
         if (!lock.tryLock()) return;
         exec.execute(() -> {
+            final long start = perSpend == null ? 0 : System.currentTimeMillis(); // 执行开始时间, 用于计算执行花费时长
             Runnable task = null;
             try {
                 task = waiting.poll();
@@ -132,12 +139,24 @@ public class Devourer {
                     try {
                         errorHandler.accept(ex, this);
                     } catch (Throwable exx) {
-                        log.error(key, exx);
+                        log.error(key + " errorHandler error", exx);
                     }
                 } else {
                     log.error(key, ex);
                 }
             } finally {
+                // 速度限制
+                if (perSpend != null && perSpend > 0) {
+                    // 剩余时长 = 应该花费时长 - 已花费时长
+                    long left = perSpend - (System.currentTimeMillis() - start);
+                    if (left > 1) {
+                        try {
+                            Thread.sleep(left - 1);
+                        } catch (InterruptedException e) {
+                            log.error(key + " speed sleep error", e);
+                        }
+                    }
+                }
                 lock.release();
                 if (!waiting.isEmpty()) trigger(); // 持续不断执行对列中的任务
             }
@@ -153,6 +172,37 @@ public class Devourer {
     public Devourer parallel(int parallel) {
         if (parallel < 1) throw new IllegalArgumentException("Param parallel >= 1");
         lock.limit(parallel);
+        return this;
+    }
+
+
+    /**
+     * 速度限制
+     * 线程会按一定频率sleep
+     * @param speed /s, /m, /h, /d; null: 不阳速
+     * @return {@link Devourer}
+     */
+    public Devourer speed(String speed) {
+        if (speed == null) {
+            perSpend = null;
+            return this;
+        }
+        String[] arr = speed.split("/");
+        // 速度大小
+        final int limit = Integer.valueOf(arr[0].trim());
+        if (limit < 1) throw new IllegalArgumentException("speed must > 0");
+        // 速度单位
+        final String unit = arr[1].trim().toLowerCase();
+        if (!Arrays.asList("s", "m", "h", "d").contains(unit)) {
+            throw new IllegalArgumentException("speed format 10/s, 10/m, 10/h, 10/d");
+        }
+        // 单位时间长
+        long unitDuration = 0;
+        if ("s".equals(unit)) unitDuration = 1000;
+        else if ("m".equals(unit)) unitDuration = 1000 * 60;
+        else if ("h".equals(unit)) unitDuration = 1000 * 60 * 60;
+        else if ("d".equals(unit)) unitDuration = 1000 * 60 * 60 * 24;
+        perSpend = unitDuration / limit;
         return this;
     }
 
