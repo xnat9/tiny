@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -15,6 +16,14 @@ import java.util.function.Supplier;
  * 数据库 sql 操作工具
  */
 public class DB implements AutoCloseable {
+    protected static final AtomicInteger count = new AtomicInteger();
+    /**
+     * 名字标识
+     */
+    public final String name = "DB-" + count.getAndIncrement();
+    /**
+     * 数据源
+     */
     protected volatile DataSource dataSource;
     /**
      * 最大返回条数限制
@@ -298,13 +307,13 @@ public class DB implements AutoCloseable {
                 fillParam(pst, params);
                 try (ResultSet rs = pst.executeQuery()) {
                     if (rs.next()) {
+                        if (String.class.equals(retType)) return rs.getString(1);
                         if (Integer.class.equals(retType)) return rs.getInt(1);
                         if (Long.class.equals(retType)) return rs.getLong(1);
                         if (Double.class.equals(retType)) return rs.getDouble(1);
                         if (BigDecimal.class.equals(retType)) return rs.getBigDecimal(1);
                         if (Boolean.class.equals(retType)) return rs.getBoolean(1);
                         if (Date.class.equals(retType)) return rs.getDate(1);
-                        if (String.class.equals(retType)) return rs.getString(1);
                         return rs.getObject(1);
                     }
                 }
@@ -365,6 +374,15 @@ public class DB implements AutoCloseable {
             } while (c != null);
         } catch (Exception ex) {}
         return null;
+    }
+
+
+    @Override
+    public String toString() {
+        return "DB{" +
+                "name='" + name + '\'' +
+                "jdbcUrl='" + getJdbcUrl() + '\'' +
+                '}';
     }
 
 
