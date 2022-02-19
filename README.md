@@ -709,10 +709,14 @@ cacheSrv.itemLimit=100
 ```java
 // 1. 设置缓存
 bean(CacheSrv).set("缓存key", "缓存值", Duration.ofMinutes(30));
-// 2. 获取缓存
+// 2. 过期函数
+bean(CacheSrv).set("缓存key", "缓存值", record -> {
+    // 缓存值: record.value
+    // 缓存更新时间: record.getUpdateTime()
+    return 函数返回过期时间点(时间缀), 返回null(不过期,除非达到缓存限制被删除);    
+});
+// 3. 获取缓存
 bean(CacheSrv).get("缓存key");
-// 3. 过期设置
-bean(CacheSrv).expire("缓存key", Duration.ofMinutes(30));
 // 4. 手动删除
 bean(CacheSrv).remove("缓存key");
 ```
@@ -792,7 +796,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 
 # 1.1.3 ing
-- [ ] feat: Devourer 速度控制
+- [x] feat: Devourer 速度控制
 
 # 参与贡献
 
