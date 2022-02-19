@@ -92,7 +92,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 
@@ -444,7 +444,7 @@ queue("队列名", () -> {
 })
 ```
 
-## 对列执行器/并发控制器 Devourer
+## _对列执行器_: Devourer
 当需要控制任务最多 一个一个, 两个两个... 的执行时  
 会自旋执行完队列中所有任务  
 服务基础类(ServerTpl)提供方法创建: queue
@@ -791,10 +791,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.2 ing
-- [x] upgrade: logback:1.2.10
-- [x] feat: utils.ioCopy io流复制方法
-- [ ] feat: CacheSrv 过期函数
+# 1.1.3 ing
 - [ ] feat: Devourer 速度控制
 
 # 参与贡献
