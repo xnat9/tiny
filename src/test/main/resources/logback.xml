@@ -18,9 +18,10 @@
 			<charset>utf-8</charset>
 		</encoder>
 		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-			<fileNamePattern>${log_path}/${log_file_name}.log.%d{yyyyMMdd}.%i.log</fileNamePattern>
+			<fileNamePattern>${log_path}/${log_file_name}.%d{yyyyMMdd}.%i.log</fileNamePattern>
 			<maxHistory>${log.maxHistory:-500}</maxHistory>
-			<maxFileSize>${log.maxFileSize:-100GB}</maxFileSize>
+			<maxFileSize>${log.maxFileSize:-50MB}</maxFileSize>
+			<totalSizeCap>${log.totalSizeCap:-100GB}</totalSizeCap>
 		</rollingPolicy>
 	</appender>
 
@@ -28,6 +29,6 @@
 
 	<root level="INFO">
 		<appender-ref ref="console"/>
-		<!--		<appender-ref ref="file"/>-->
+		<appender-ref ref="file"/>
 	</root>
 </configuration>
