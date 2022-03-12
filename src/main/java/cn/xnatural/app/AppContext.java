@@ -64,15 +64,22 @@ public class AppContext {
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ...");
         int processorCount = Runtime.getRuntime().availableProcessors();
-        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, processorCount >= 8 ? 8 : 4);
+        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, processorCount >= 4 ? 8 : 4);
         final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize,
-                Math.max(corePoolSize, getAttr("sys.exec.maximumPoolSize", Integer.class, processorCount <= 8 ? 16 : processorCount * 2)),
-                getAttr("sys.exec.keepAliveTime", Long.class, 4L), TimeUnit.HOURS,
+                Math.max(corePoolSize, getAttr("sys.exec.maximumPoolSize", Integer.class, processorCount <= 8 ? 16 : Math.min(processorCount * 2, 64))),
+                getAttr("sys.exec.keepAliveTime", Long.class, 6L), TimeUnit.HOURS,
                 new LinkedBlockingQueue<Runnable>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)) {
-                    boolean threshold() { // 让线程池创建(除核心线程外)新的线程的临界条件
-                        return _exec.get().getActiveCount() >= _exec.get().getPoolSize() &&
-                                _exec.get().getPoolSize() >= _exec.get().getCorePoolSize() &&
-                                _exec.get().getPoolSize() < _exec.get().getMaximumPoolSize();
+                    /**
+                     * 让线程池创建(除核心线程外)新的线程的临界条件
+                     * 核心线程已满才会触发此方法
+                     * 考虑点1: 系统内部添加任务, 有可能会被等待, 造成没有那么多任务的假象. 所以不能用size去比较
+                     *      即: 当所有线程都处于执行状态时, 刚好有一个添加任务添加后也只是等待执行, 没有突破添加线程的条件(除非有多个添加任务)
+                     *      super.size() > 1 && _exec.get().getPoolSize() < _exec.get().getMaximumPoolSize();
+                     * @return true: 创建新线程
+                     */
+                    boolean threshold() {
+                        int ps = _exec.get().getPoolSize();
+                        return ps < _exec.get().getMaximumPoolSize() && _exec.get().getActiveCount() >= ps;
                     }
                     @Override
                     public boolean offer(Runnable r) { return !threshold() && super.offer(r); }

@@ -811,6 +811,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.3 ing
 - [x] feat: Devourer 速度控制
+- [ ] feat: 自定义注解
+
 
 # 参与贡献
 

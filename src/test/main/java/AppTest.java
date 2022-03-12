@@ -1,6 +1,7 @@
 import cn.xnatural.app.AppContext;
 import cn.xnatural.app.Inject;
 import cn.xnatural.app.ServerTpl;
+import cn.xnatural.app.Utils;
 import cn.xnatural.app.util.DB;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.http.HttpServer;
@@ -26,7 +27,10 @@ public class AppTest {
                                 log.info("测试sql: " + db.single("select count(1) from test", Integer.class));
                             }
                         }
-                        , sched(), web(), db(), remoter()
+                        , sched()
+                        , web()
+                        , db()
+                        , remoter()
                         , testExec()
                 ).start();
     }
@@ -138,14 +142,10 @@ public class AppTest {
 
             @EL(name = "sys.started", async = true)
             void test() {
-                sched.fixedDelay(Duration.ofSeconds(1), () -> {
+                sched.fixedDelay(Duration.ofMillis(200), () -> {
                     async(() -> {
-                        try {
-                            Thread.sleep(500 * (new Random().nextInt(30) + 1));
-                            log.info("===== " + exec());
-                        } catch (InterruptedException e) {
-                            log.error("", e);
-                        }
+                        Utils.http().get("http://39.104.28.131:9090/test/timeout?wait=" + (200 * (new Random().nextInt(30) + 1))).execute();
+                        log.info("===== " + exec());
                     });
                 });
             }

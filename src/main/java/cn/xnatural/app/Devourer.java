@@ -66,38 +66,31 @@ public class Devourer {
      * @param exec 线程池
      */
     public Devourer(String key, Executor exec) {
-        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key required");
-        if (exec == null) throw new IllegalArgumentException("Param executor required");
-        this.key = key;
-        this.exec = exec;
+        this.key = (key == null || key.isEmpty()) ? Devourer.class.getSimpleName() + "@" + Integer.toHexString(hashCode()) : key;
+        this.exec = exec == null ? new ThreadPoolExecutor(2, 4, 6L, TimeUnit.HOURS,
+                new LinkedBlockingQueue<Runnable>(100000) {
+                    boolean threshold() { // 让线程池创建(除核心线程外)新的线程的临界条件
+                        ThreadPoolExecutor e = ((ThreadPoolExecutor) Devourer.this.exec);
+                        int ps;
+                        return lock.limit > e.getCorePoolSize() && (ps = e.getPoolSize()) < e.getMaximumPoolSize() && e.getActiveCount() >= ps;
+                    }
+                    @Override
+                    public boolean offer(Runnable r) { return !threshold() && super.offer(r); }
+                },
+                new ThreadFactory() {
+                    final AtomicInteger i = new AtomicInteger();
+                    @Override
+                    public Thread newThread(Runnable r) { return new Thread(r, Devourer.this.key + "-" + i.incrementAndGet()); }
+                }) : exec;
     }
 
     /**
      * 创建对列
      * @param key 对列标识
      */
-    public Devourer(String key) {
-        if (key == null || key.isEmpty()) throw new IllegalArgumentException("Param key required");
-        this.key = key;
-        this.exec = new ThreadPoolExecutor(4, 8, 2L, TimeUnit.HOURS,
-                new LinkedBlockingQueue(100000),
-                new ThreadFactory() {
-                    final AtomicInteger i = new AtomicInteger();
-                    @Override
-                    public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
-                });
-    }
+    public Devourer(String key) { this(key, null); }
 
-    public Devourer() {
-        this.key = Devourer.class.getSimpleName() + "@" + Integer.toHexString(hashCode());
-        this.exec = new ThreadPoolExecutor(4, 8, 2L, TimeUnit.HOURS,
-                new LinkedBlockingQueue(100000),
-                new ThreadFactory() {
-                    final AtomicInteger i = new AtomicInteger();
-                    @Override
-                    public Thread newThread(Runnable r) { return new Thread(r, key + "-" + i.incrementAndGet()); }
-                });
-    }
+    public Devourer() { this(null, null); }
 
 
     /**
