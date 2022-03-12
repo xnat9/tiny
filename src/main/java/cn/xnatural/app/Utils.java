@@ -158,13 +158,6 @@ public class Utils {
         else if (Float.class.equals(type) || float.class.equals(type)) return (T) Float.valueOf(v.toString());
         else if (BigDecimal.class.equals(type)) return (T) new BigDecimal(v.toString());
         else if (URI.class.equals(type)) return (T) URI.create(v.toString());
-        else if (URL.class.equals(type)) {
-            try {
-                return (T) URI.create(v.toString()).toURL();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-        }
         else if (type.isEnum()) return Arrays.stream(type.getEnumConstants()).filter((o) -> v.equals(((Enum) o).name())).findFirst().orElse(null);
         return (T) v;
     }
