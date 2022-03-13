@@ -92,7 +92,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.2</version>
+    <version>1.1.3</version>
 </dependency>
 ```
 
@@ -809,8 +809,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.3 ing
-- [x] feat: Devourer 速度控制
+# 1.1.4 ing
 - [ ] feat: 自定义注解
 
 
