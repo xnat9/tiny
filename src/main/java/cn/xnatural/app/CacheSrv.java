@@ -185,7 +185,7 @@ public class CacheSrv extends ServerTpl {
          */
         protected long left(long timePoint) {
             Long expireTime = expireFn == null ? null : expireFn.apply(this);
-            return expireTime == null ? Long.MAX_VALUE : timePoint - expireTime;
+            return expireTime == null ? Long.MAX_VALUE : expireTime - timePoint;
         }
 
 

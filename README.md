@@ -811,6 +811,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.4 ing
 - [x] fix: 类型转换 npt
+- [x] fix: CacheSrv 缓存过期失效
 - [ ] feat: 自定义注解
 
 
