@@ -810,6 +810,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 
 # 1.1.4 ing
+- [x] fix: 类型转换 npt
 - [ ] feat: 自定义注解
 
 
