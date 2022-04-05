@@ -92,7 +92,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.4</version>
 </dependency>
 ```
 
@@ -809,9 +809,10 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.4 ing
+# 1.1.5 ing
 - [x] fix: 类型转换 npt
 - [x] fix: CacheSrv 缓存过期失效
+- [ ] feat: CacheSrv hset, hget
 - [ ] feat: 自定义注解
 
 
