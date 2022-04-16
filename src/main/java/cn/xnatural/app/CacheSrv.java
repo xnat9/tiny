@@ -46,7 +46,8 @@ public class CacheSrv extends ServerTpl {
     @EL(name = "{name}.set")
     public CacheSrv set(String key, Object value, Duration expire) {
         log.trace("Set cache. key: {}, value: {}, expire: {}", key, value, expire);
-        _data.get().put(key, new Record(record -> expire == null ? Long.MAX_VALUE : expire.toMillis() + record.updateTime, value));
+        Record old = _data.get().put(key, new Record(record -> expire == null ? Long.MAX_VALUE : expire.toMillis() + record.updateTime, value));
+        if (old != null) old.close(key);
         clean();
         return this;
     }
@@ -62,7 +63,8 @@ public class CacheSrv extends ServerTpl {
     @EL(name = "{name}.set2")
     public CacheSrv set(String key, Object value, Function<Record, Long> expireFn) {
         log.trace("Set cache. key: {}, value: {}", key, value);
-        _data.get().put(key, new Record(expireFn, value));
+        Record old = _data.get().put(key, new Record(expireFn, value));
+        if (old != null) old.close(key);
         clean();
         return this;
     }
@@ -77,6 +79,7 @@ public class CacheSrv extends ServerTpl {
     public Object remove(String key) {
         Record record = _data.get().remove(key);
         if (record == null) return null;
+        record.close(key);
         return record.value;
     }
 
@@ -91,7 +94,7 @@ public class CacheSrv extends ServerTpl {
         Record record = _data.get().get(key);
         if (record == null) return null;
         if (record.valid()) return record.value;
-        _data.get().remove(key);
+        remove(key);
         return null;
     }
 
@@ -109,7 +112,7 @@ public class CacheSrv extends ServerTpl {
             record.updateTime = System.currentTimeMillis();
             return record.value;
         }
-        _data.get().remove(key);
+        remove(key);
         return null;
     }
 
@@ -131,7 +134,9 @@ public class CacheSrv extends ServerTpl {
                 Map.Entry<String, Record> entry = iter.next();
                 long left = entry.getValue().left(now);
                 if (left < 1) { // 过期数据
-                    iter.remove(); oldEntry = null; break;
+                    iter.remove();
+                    entry.getValue().close(entry.getKey());
+                    oldEntry = null; break;
                 }
                 if (onlyCleanExpired) continue;
 
@@ -144,9 +149,7 @@ public class CacheSrv extends ServerTpl {
                     oldLeft = left;
                 }
             }
-            if (oldEntry != null) {
-                _data.get().remove(oldEntry.getKey());
-            }
+            if (oldEntry != null) remove(oldEntry.getKey());
         };
         if (onlyCleanExpired) queue(clean); // 异步清除多余的缓存
         else clean.run(); // 同步清理: 避免异步排对太多而不能及时清理造成内存占用过多而溢出
@@ -190,5 +193,20 @@ public class CacheSrv extends ServerTpl {
 
 
         public long getUpdateTime() { return updateTime; }
+
+
+        /**
+         * 如果缓存值是 AutoCloseable,则在失效时 执行 close
+         * @param key 缓存key
+         */
+        protected void close(String key) {
+            if (value instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) value).close();
+                } catch (Exception e) {
+                    log.error("Remove cache: " +key+ " close error", e);
+                }
+            }
+        }
     }
 }

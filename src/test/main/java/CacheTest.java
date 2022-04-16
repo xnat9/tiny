@@ -57,4 +57,23 @@ public class CacheTest {
         Thread.sleep(1000);
         Assertions.assertTrue(cache.get(key) == null, "");
     }
+
+
+    @Test
+    void testClose() {
+        final AppContext app = new AppContext();
+        app.addSource(new CacheSrv());
+        app.start();
+
+        String key = "a";
+
+        CacheSrv cache = app.bean(CacheSrv.class, null);
+        cache.set(key, new AutoCloseable() {
+            @Override
+            public void close() throws Exception {
+                System.out.println("=====close");
+            }
+        });
+        cache.remove(key);
+    }
 }
