@@ -290,7 +290,10 @@ public class Devourer {
     /**
      * 关闭
      */
-    public void shutdown() { if (exec instanceof ExecutorService) ((ExecutorService) exec).shutdown(); }
+    public void shutdown() {
+        waiting.clear();
+        if (exec instanceof ExecutorService) ((ExecutorService) exec).shutdown();
+    }
 
 
     @Override
