@@ -93,7 +93,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
 </dependency>
 ```
 
