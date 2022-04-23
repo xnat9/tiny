@@ -830,9 +830,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.5 ing
-- [x] feat: CacheSrv 如果缓存值是 AutoCloseable,则在失效时 执行 close
-- [x] feat: CacheSrv hset, hget
+# 1.1.6 ing
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 
