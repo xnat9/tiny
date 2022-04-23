@@ -467,6 +467,8 @@ queue("save").offer(() -> {
 ```java
 queue("save").parallel(2)
 ```
+> 注: parallel 最好小于 系统最大线程数(sys.exec.maximumPoolSize), 即不能让某一个执行对列占用所有可用的线程
+
 #### 执行速度控制
 把任务按速度均匀分配在时间线上执行  
 支持: 每秒(10/s), 每分(10/m), 每小时(10/h), 每天(10/d)
@@ -715,10 +717,10 @@ Utils.tailer().tail("d:/tmp/tmp.json", 5);
 app.addSource(new CacheSrv());
 ```
 ```properties
-
 ## app.properties 缓存最多保存100条数据
 cacheSrv.itemLimit=100
 ```
+### 缓存操作
 ```java
 // 1. 设置缓存
 bean(CacheSrv).set("缓存key", "缓存值", Duration.ofMinutes(30));
@@ -734,6 +736,24 @@ bean(CacheSrv).get("缓存key");
 bean(CacheSrv).getAndUpdate("缓存key");
 // 5. 手动删除
 bean(CacheSrv).remove("缓存key");
+```
+
+### hash缓存操作
+```java
+// 1. 设置缓存
+bean(CacheSrv).hset("缓存key", "数据key", "缓存值", Duration.ofMinutes(30));
+// 2. 过期函数
+bean(CacheSrv).hset("缓存key", "数据key", "缓存值", record -> {
+    // 缓存值: record.value
+    // 缓存更新时间: record.getUpdateTime()
+    return 函数返回过期时间点(时间缀), 返回null(不过期,除非达到缓存限制被删除);    
+});
+// 3. 获取缓存
+bean(CacheSrv).hget("缓存key", "数据key");
+// 4. 获取缓存值, 并更新缓存时间(即从现在开始重新计算过期时间)
+bean(CacheSrv).hgetAndUpdate("缓存key", "数据key");
+// 5. 手动删除
+bean(CacheSrv).hremove("缓存key", "数据key");
 ```
 
 ## 无限递归优化实现 Recursion
@@ -812,7 +832,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.5 ing
 - [x] feat: CacheSrv 如果缓存值是 AutoCloseable,则在失效时 执行 close
-- [ ] feat: CacheSrv hset, hget
+- [x] feat: CacheSrv hset, hget
+- [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 
 

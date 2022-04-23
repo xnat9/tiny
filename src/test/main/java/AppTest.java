@@ -24,6 +24,8 @@ public class AppTest {
 
                             @EL(name = "sys.started", async = true)
                             void started() {
+                                db.execute("create table IF NOT EXISTS test(id int auto_increment, name varchar(255));");
+                                db.execute("insert into test(name) values('aa');");
                                 log.info("测试sql: " + db.single("select count(1) from test", Integer.class));
                             }
                         }
@@ -144,7 +146,7 @@ public class AppTest {
             void test() {
                 sched.fixedDelay(Duration.ofMillis(200), () -> {
                     async(() -> {
-                        Utils.http().get("http://39.104.28.131:9090/test/timeout?wait=" + (200 * (new Random().nextInt(30) + 1))).execute();
+                        Utils.http().get("http://39.104.28.131:8080/test/timeout?timeout=" + (200 * (new Random().nextInt(30) + 1))).execute();
                         log.info("===== " + exec());
                     });
                 });
