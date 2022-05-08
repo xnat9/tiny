@@ -172,7 +172,7 @@ public class Devourer {
     /**
      * 速度限制
      * 线程会按一定频率sleep
-     * @param speed /s, /m, /h, /d; null: 不阳速
+     * @param speed /s, /m, /h, /d; null: 不阻速
      * @return {@link Devourer}
      */
     public Devourer speed(String speed) {
