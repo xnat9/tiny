@@ -581,6 +581,6 @@ public class AppContext {
      * 实例Id
      * NOTE: 保证唯一
      */
-    protected final Lazier<String> _id = new Lazier<>(() -> getAttr("sys.id", String.class, UUID.randomUUID().toString().replace("-", "")));
+    protected final Lazier<String> _id = new Lazier<>(() -> getAttr("sys.id", String.class, Utils.nanoId()));
     public String id() { return _id.get(); }
 }

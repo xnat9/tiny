@@ -831,6 +831,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 
 # 1.1.6 ing
+- [x] feat: Utils#random 替换成 Utils#nanoId
+- [ ] upgrade: enet 1.0.0
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 

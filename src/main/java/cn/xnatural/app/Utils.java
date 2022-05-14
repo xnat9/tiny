@@ -15,6 +15,7 @@ import java.math.BigInteger;
 import java.net.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -112,29 +113,32 @@ public class Utils {
 
 
     public static final char[] CS = new char[]{'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
-    /**
-     * 随机字符串(区分大小写)
-     * @param length 长度
-     * @param prefix 前缀
-     * @param suffix 后缀
-     * @return str
-     */
-    public static String random(int length, String prefix, String suffix) {
-        if (length < 1) throw new IllegalArgumentException("length must le 1");
-        final char[] cs = new char[length];
-        Random r = new Random();
-        for (int i = 0; i < cs.length; i++) {
-            cs[i] = CS[r.nextInt(CS.length)];
-        }
-        return (prefix == null ? "" : prefix) + String.valueOf(cs) + (suffix == null ? "" : suffix);
-    }
+    public static final SecureRandom SR = new SecureRandom();
+
+    public static String nanoId() { return nanoId(21); }
 
     /**
-     * 随机字符串(区分大小写)
-     * @param length 长度
-     * @return str
+     * nano id 生成
+     * @param length 生成的长度
      */
-    public static String random(int length) { return random(length, null, null); }
+    public static String nanoId(int length) {
+        final int mask = (2 << (int)Math.floor(Math.log(CS.length - 1) / Math.log(2))) - 1;
+        final int step = (int)Math.ceil(1.6 * mask * length / CS.length);
+        final StringBuilder sb = new StringBuilder();
+        while(true) {
+            byte[] bytes = new byte[step];
+            SR.nextBytes(bytes);
+            for(int i = 0; i < step; ++i) {
+                int alphabetIndex = bytes[i] & mask;
+                if (alphabetIndex < CS.length) {
+                    sb.append(CS[alphabetIndex]);
+                    if (sb.length() == length) {
+                        return sb.toString();
+                    }
+                }
+            }
+        }
+    }
 
 
     /**

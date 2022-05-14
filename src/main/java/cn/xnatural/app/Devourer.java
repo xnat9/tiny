@@ -125,7 +125,7 @@ public class Devourer {
             Runnable task = null;
             try {
                 task = waiting.poll();
-                if (task != null) task.run();
+                if (task != null) task.run(); // 5个并发添加5个任务, 锁限制3, 第一次执行完3个任务, 第2次再同时获取3个锁, 但任务只有2个, 所以有可能poll出来为空
             } catch (Throwable ex) {
                 if (task != null && failMaxKeep != null && failMaxKeep > 0 && (getWaitingCount() < failMaxKeep)) waiting.addFirst(task);
                 if (errorHandler != null) {

@@ -49,8 +49,8 @@ public class UtilsTest {
 
 
     @Test
-    void randomStr() {
-        log.info(Utils.random(20, "app_", null));
+    void nanoIdTest() {
+        log.info("nanoId: " + Utils.nanoId());
     }
 
 
