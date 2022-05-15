@@ -95,7 +95,9 @@ public class ServerTpl {
      * @param name bean名字
      * @return bean
      */
-    protected <T> T bean(Class<T> type, String name) { return ep == null ? null : (T) ep.fire("bean.get", EC.of(this).sync().args(type, name)); }
+    protected <T> T bean(Class<T> type, String name) {
+        return ep == null ? null : (T) ep.fire(new EC("bean.get", this).sync().args(type, name));
+    }
 
     /**
      * 全局查找 bean

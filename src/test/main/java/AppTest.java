@@ -117,23 +117,13 @@ public class AppTest {
 
     static ServerTpl remoter() {
         return new ServerTpl("remoter") {
-            Remoter remoter;
             @EL(name = "sched.started")
             void start() {
-                remoter = new Remoter(app().name(), app().id(), attrs(), exec(), ep, bean(Sched.class));
+                Remoter remoter = new Remoter(app().name(), app().id(), attrs(), exec(), ep, bean(Sched.class));
                 exposeBean(remoter);
-                exposeBean(remoter.getAioClient(), "aioClient");
+                exposeBean(remoter.xioClient);
                 ep.fire(name + ".started");
             }
-
-            @EL(name = "sys.heartbeat", async = true)
-            void heartbeat() {
-                remoter.sync();
-                remoter.getAioServer().clean();
-            }
-
-            @EL(name = "sys.stopping", async = true)
-            void stop() { remoter.stop(); }
         };
     }
 
@@ -144,9 +134,9 @@ public class AppTest {
 
             @EL(name = "sys.started", async = true)
             void test() {
-                sched.fixedDelay(Duration.ofMillis(200), () -> {
+                sched.fixedDelay(Duration.ofMillis(1000), () -> {
                     async(() -> {
-                        Utils.http().get("http://39.104.28.131:8080/test/timeout?timeout=" + (200 * (new Random().nextInt(30) + 1))).execute();
+                        Utils.http().get("http://39.104.28.131:8080/test/timeout?wait=" + (800 + (new Random().nextInt(500)))).debug().execute();
                         log.info("===== " + exec());
                     });
                 });

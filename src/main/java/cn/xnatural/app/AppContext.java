@@ -49,7 +49,7 @@ public class AppContext {
      */
     protected final        Thread                shutdownHook = new Thread(() -> {
         // 通知各个模块服务关闭
-        ep().fire("sys.stopping", EC.of(this).async(false).completeFn(ec -> {
+        ep().fire(new EC("sys.stopping", AppContext.this).completeFn(ec -> {
             exec().shutdown();
             // 不删除的话会执行两遍
             // if (shutdownHook) Runtime.getRuntime().removeShutdownHook(shutdownHook)
@@ -120,11 +120,11 @@ public class AppContext {
         log.debug("init ep ...");
         EP ep = new EP(exec(), LoggerFactory.getLogger(EP.class)) {
             @Override
-            protected Object doPublish(String eName, EC ec) {
-                if ("sys.inited".equals(eName) || "sys.starting".equals(eName) || "sys.stopping".equals(eName) || "sys.started".equals(eName)) {
-                    if (ec.source() != AppContext.this) throw new UnsupportedOperationException("not allow fire event '" + eName + "'");
+            public Object fire(EC ec) {
+                if ("sys.inited".equals(ec.eName) || "sys.starting".equals(ec.eName) || "sys.stopping".equals(ec.eName) || "sys.started".equals(ec.eName)) {
+                    if (ec.source() != AppContext.this) throw new UnsupportedOperationException("not allow fire event '" + ec.eName + "'");
                 }
-                return super.doPublish(eName, ec);
+                return super.fire(ec);
             }
 
             @Override
@@ -265,13 +265,13 @@ public class AppContext {
     public AppContext start() {
         log.info("Starting Application with PID {}, active profile: {}", Utils.pid(), getProfile());
         // 1. 初始化
-        ep().fire("sys.inited", EC.of(this));
+        ep().fire(new EC("sys.inited", this));
         // 2. 通知所有服务启动
-        ep().fire("sys.starting", EC.of(this).completeFn(ec -> {
+        ep().fire(new EC("sys.starting", this).completeFn(ec -> {
             Runtime.getRuntime().addShutdownHook(shutdownHook);
             sourceMap.forEach((s, o) -> inject(o)); // 自动注入
             log.info("Started Application '{}' in {} seconds (JVM running for {})", name() + ":" + id(), (System.currentTimeMillis() - startup.getTime()) / 1000.0, ManagementFactory.getRuntimeMXBean().getUptime() / 1000.0);
-            ep().fire("sys.started", EC.of(this).completeFn((ec1) -> {
+            ep().fire(new EC("sys.started", this).completeFn(ec1 -> {
                 Supplier<Duration> nextTimeFn = () -> {
                     Integer minInterval = getAttr("sys.heartbeat.minInterval", Integer.class, 60);
                     Integer randomInterval = getAttr("sys.heartbeat.randomInterval", Integer.class, 180);
@@ -281,7 +281,7 @@ public class AppContext {
                 final Runnable fn = new Runnable() {
                     @Override
                     public void run() {
-                        ep().fire("sys.heartbeat");
+                        ep().fire(new EC("sys.heartbeat", this));
                         ep().fire("sched.after", nextTimeFn.get(), this);
                     }
                 };
@@ -396,7 +396,7 @@ public class AppContext {
      * @param name 对象名字
      * @return bean
      */
-    public <T> T bean(Class<T> type, String name) { return (T) ep().fire("bean.get", EC.of(this).sync().args(type, name)); }
+    public <T> T bean(Class<T> type, String name) { return (T) ep().fire(new EC("bean.get", this).args(type, name)); }
 
 
     /**
@@ -518,9 +518,9 @@ public class AppContext {
             @Override
             public boolean exist(String... eNames) { return ep().exist(eNames); }
             @Override
-            public Object fire(String eName, EC ec) {
+            public Object fire(EC ec) {
                 if (ec.source() == null) ec.source(source);
-                return ep().fire(eName, ec);
+                return ep().fire(ec);
             }
             @Override
             public String toString() { return "wrappedCoreEp: " + source; }
