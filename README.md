@@ -93,7 +93,7 @@ partition "执行器/线程池" {
 <dependency>
     <groupId>cn.xnatural</groupId>
     <artifactId>tiny</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
 </dependency>
 ```
 
@@ -830,9 +830,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.6 ing
-- [x] feat: Utils#random 替换成 Utils#nanoId
-- [x] upgrade: enet 1.0.1
+# 1.1.7 ing
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 
