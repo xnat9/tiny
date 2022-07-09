@@ -275,10 +275,10 @@ public class AppContext {
             ep().fire(new EC("sys.started", this).completeFn(ec1 -> {
                 Supplier<Duration> nextTimeFn = () -> {
                     Integer minInterval = getAttr("sys.heartbeat.minInterval", Integer.class, 60);
-                    Integer randomInterval = getAttr("sys.heartbeat.randomInterval", Integer.class, 180);
+                    Integer randomInterval = getAttr("sys.heartbeat.randomInterval", Integer.class, 120);
                     return Duration.ofSeconds(minInterval + new Random().nextInt(randomInterval));
                 };
-                // 每隔一段时间触发一次心跳, 1~4分钟随机心跳
+                // 每隔一段时间触发一次心跳, 1~3分钟随机心跳
                 final Runnable fn = new Runnable() {
                     @Override
                     public void run() {
