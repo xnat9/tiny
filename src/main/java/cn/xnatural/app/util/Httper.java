@@ -260,7 +260,7 @@ public class Httper {
             if (conn != null) conn.disconnect();
         }
         if (debug) {
-            String logMsg = "Send http: " +urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret;
+            String logMsg = "Send http: ("+method+")" +urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret;
             if (ex == null) {
                 log.info(logMsg);
             } else {

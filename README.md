@@ -831,6 +831,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 
 # 1.1.7 ing
+- [x] upgrade: enet: 1.1.0
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 
