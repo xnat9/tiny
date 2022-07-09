@@ -3,6 +3,7 @@ package cn.xnatural.app;
 import cn.xnatural.enet.event.EC;
 import cn.xnatural.enet.event.EL;
 import cn.xnatural.enet.event.EP;
+import cn.xnatural.enet.event.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,11 +121,11 @@ public class AppContext {
         log.debug("init ep ...");
         EP ep = new EP(exec(), LoggerFactory.getLogger(EP.class)) {
             @Override
-            public Object fire(EC ec) {
+            public Object fire(EC ec, List<Listener> ls) {
                 if ("sys.inited".equals(ec.eName) || "sys.starting".equals(ec.eName) || "sys.stopping".equals(ec.eName) || "sys.started".equals(ec.eName)) {
                     if (ec.source() != AppContext.this) throw new UnsupportedOperationException("not allow fire event '" + ec.eName + "'");
                 }
-                return super.fire(ec);
+                return super.fire(ec, ls);
             }
 
             @Override
@@ -396,7 +397,9 @@ public class AppContext {
      * @param name 对象名字
      * @return bean
      */
-    public <T> T bean(Class<T> type, String name) { return (T) ep().fire(new EC("bean.get", this).args(type, name)); }
+    public <T> T bean(Class<T> type, String name) {
+        return (T) ep().fire(new EC("bean.get", this).sync().args(type, name));
+    }
 
 
     /**
@@ -408,8 +411,6 @@ public class AppContext {
      */
     @EL(name = {"bean.get", "sys.bean.get"}, order = -1f)
     protected <T> T localBean(EC ec, Class<T> bType, String bName) {
-        if (ec != null && ec.result != null) return (T) ec.result; // 已经找到结果了, 就直接返回
-
         Object bean = null;
         if (bName != null && bType != null) {
             bean = sourceMap.get(bName);
@@ -417,7 +418,7 @@ public class AppContext {
         } else if (bName != null && bType == null) {
             bean = sourceMap.get(bName);
         } else if (bName == null && bType != null) {
-            if (Executor.class.isAssignableFrom(bType) || ExecutorService.class.isAssignableFrom(bType)) bean = wrapExecForSource(ec.source());
+            if (Executor.class.isAssignableFrom(bType)) bean = wrapExecForSource(ec.source());
             else if (AppContext.class.isAssignableFrom(bType)) bean = this;
             else if (EP.class.isAssignableFrom(bType)) bean = wrapEpForSource(ec.source());
             else {
@@ -518,9 +519,11 @@ public class AppContext {
             @Override
             public boolean exist(String... eNames) { return ep().exist(eNames); }
             @Override
-            public Object fire(EC ec) {
+            public Object fire(EC ec) { return ep().fire(ec); }
+            @Override
+            public Object fire(EC ec, List<Listener> ls) {
                 if (ec.source() == null) ec.source(source);
-                return ep().fire(ec);
+                return ep().fire(ec, ls);
             }
             @Override
             public String toString() { return "wrappedCoreEp: " + source; }
