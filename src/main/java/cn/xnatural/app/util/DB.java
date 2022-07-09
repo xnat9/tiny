@@ -329,7 +329,9 @@ public class DB implements AutoCloseable {
         ParameterMetaData metaData = pst.getParameterMetaData();
         if (metaData != null && params != null) {
             for (int i = 0; i < params.length; i++) {
-                pst.setObject(i + 1, params[i]);
+                Object v = params[i];
+                if (v instanceof Date) v = new java.sql.Date(((Date) v).getTime());
+                pst.setObject(i + 1, v);
             }
         }
         pst.setMaxRows(maxRows);
