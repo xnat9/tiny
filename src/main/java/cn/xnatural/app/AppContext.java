@@ -576,7 +576,7 @@ public class AppContext {
     /**
      * 系统名字. 用于多个系统启动区别
      */
-    protected final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "app"));
+    protected final Lazier<String> _name = new Lazier<>(() -> getAttr("sys.name", String.class, "tiny"));
     public String name() { return _name.get(); }
 
 
