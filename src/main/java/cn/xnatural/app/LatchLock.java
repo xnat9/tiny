@@ -44,11 +44,8 @@ public class LatchLock {
     public boolean tryLock() {
         int latch = latchSize.get();
         if (latch >= limit) return false;
-        if (!latchSize.compareAndSet(latch, latch + 1)) {
-            if (latchSize.get() < limit) return tryLock();
-            return false;
-        }
-        return true;
+        if (latchSize.compareAndSet(latch, latch + 1)) return true;
+        return tryLock();
     }
 
 
@@ -59,7 +56,7 @@ public class LatchLock {
      */
     public int release() {
         int latch = latchSize.get();
-        if (latch <= 0) return 0;
+        if (latch <= 0) return latch;
         if (latchSize.compareAndSet(latch, latch - 1)) {
             return latch - 1;
         }
