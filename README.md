@@ -830,8 +830,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.7 ing
-- [x] upgrade: enet: 1.1.0
+# 1.1.8 ing
+- [x] fix: cacheSrv#hgetAndUpdate npe
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 

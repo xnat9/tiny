@@ -237,6 +237,7 @@ public class CacheSrv extends ServerTpl {
         Map<String, Record> data = _hashdata.get().get(key);
         if (data == null) return null;
         Record record = data.get(dataKey);
+        if (record == null) return null;
         if (record.valid()) {
             record.updateTime = System.currentTimeMillis();
             return record.value;
