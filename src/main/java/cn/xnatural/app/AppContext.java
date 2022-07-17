@@ -89,6 +89,7 @@ public class AppContext {
                     final AtomicLong i = new AtomicLong(1);
                     @Override
                     public Thread newThread(Runnable r) {
+                        log.trace("New thread: {}", i.get());
                         return new Thread(r, "sys-" + i.getAndIncrement());
                     }
                 },
