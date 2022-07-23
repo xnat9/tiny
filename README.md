@@ -832,6 +832,7 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.8 ing
 - [x] fix: cacheSrv#hgetAndUpdate npe
+- [x] fix: 应用关闭没有等待各服务正常关闭
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: 自定义注解
 

@@ -50,11 +50,13 @@ public class AppContext {
      */
     protected final        Thread                shutdownHook = new Thread(() -> {
         // 通知各个模块服务关闭
-        ep().fire(new EC("sys.stopping", AppContext.this).completeFn(ec -> {
-            exec().shutdown();
-            // 不删除的话会执行两遍
-            // if (shutdownHook) Runtime.getRuntime().removeShutdownHook(shutdownHook)
-        }));
+        CountDownLatch latch = new CountDownLatch(1);
+        ep().fire(new EC("sys.stopping", AppContext.this).completeFn(ec -> latch.countDown()));
+        try {
+            latch.await(getAttr("sys.stopWait", Long.class, 30L), TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }, "stop");
 
     /**
