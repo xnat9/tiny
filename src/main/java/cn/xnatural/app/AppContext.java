@@ -98,12 +98,12 @@ public class AppContext {
                 new ThreadPoolExecutor.CallerRunsPolicy()
         ) {
             @Override
-            public void execute(Runnable fn) {
-                try {
-                    super.execute(fn);
-                } catch (Throwable t) {
-                    log.error("sys task error", t);
-                }
+            public void execute(Runnable cmd) {
+                super.execute(() -> {
+                    try { cmd.run(); } catch (Throwable ex) {
+                        log.error("", ex); // 只有这能拦截未知异常 ThreadPoolExecutor#runWorker
+                    }
+                });
             }
         };
         if (getAttr("sys.exec.allowCoreThreadTimeOut", Boolean.class, false)) {
