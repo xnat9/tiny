@@ -33,7 +33,7 @@ public class AppTest {
                         , web()
                         , db()
                         , remoter()
-                        , testExec()
+                        , 压测()
                 ).start();
     }
 
@@ -88,7 +88,7 @@ public class AppTest {
             }
 
             @EL(name = "sys.stop")
-            void stop() { if (server != null) server.stop(); }
+            void stop() { if (server != null) server.close(); }
         };
     }
 
@@ -121,20 +121,21 @@ public class AppTest {
             void start() {
                 Remoter remoter = new Remoter(app().name(), app().id(), attrs(), exec(), ep, bean(Sched.class));
                 exposeBean(remoter);
-                exposeBean(remoter.xioClient);
+                exposeBean(remoter.xioClient, "xioClient");
                 ep.fire(name + ".started");
             }
         };
     }
 
 
-    static ServerTpl testExec() {
+    static ServerTpl 压测() {
         return new ServerTpl("testExec") {
             @Inject Sched sched;
 
             @EL(name = "sys.started", async = true)
             void test() {
-                sched.fixedDelay(Duration.ofMillis(1000), () -> {
+                // 新增任务的速度必须是任务执行的时长的step倍, 才会新增线程
+                sched.fixedDelay(Duration.ofMillis(300), () -> {
                     async(() -> {
                         Utils.http().get("http://39.104.28.131:8080/test/timeout?wait=" + (800 + (new Random().nextInt(500)))).debug().execute();
                         log.info("===== " + exec());

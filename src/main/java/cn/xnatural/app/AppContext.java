@@ -67,22 +67,30 @@ public class AppContext {
     protected final Lazier<ThreadPoolExecutor> _exec = new Lazier<>(() -> {
         log.debug("init sys executor ...");
         int processorCount = Runtime.getRuntime().availableProcessors();
-        Integer corePoolSize = getAttr("sys.exec.corePoolSize", Integer.class, processorCount >= 4 ? 8 : 4);
+        Integer corePoolSize = Math.max(2, getAttr("sys.exec.corePoolSize", Integer.class, processorCount >= 4 ? 8 : 4));
         final ThreadPoolExecutor exec = new ThreadPoolExecutor(corePoolSize,
                 Math.max(corePoolSize, getAttr("sys.exec.maximumPoolSize", Integer.class, processorCount <= 8 ? 16 : Math.min(processorCount * 2, 64))),
                 getAttr("sys.exec.keepAliveTime", Long.class, 6L), TimeUnit.HOURS,
                 new LinkedBlockingQueue<Runnable>(getAttr("sys.exec.queueCapacity", Integer.class, 100000)) {
+                    double upThreadThreshold = getAttr("sys.exec.upThreadThreshold", Double.class, 0.5d);
                     /**
                      * 让线程池创建(除核心线程外)新的线程的临界条件
                      * 核心线程已满才会触发此方法
+                     * 慢创建: 按当前池中的线程数和等待任务数增长
                      * 考虑点1: 系统内部添加任务, 有可能会被等待, 造成没有那么多任务的假象. 所以不能用size去比较
                      *      即: 当所有线程都处于执行状态时, 刚好有一个添加任务添加后也只是等待执行, 没有突破添加线程的条件(除非有多个添加任务)
                      *      super.size() > 1 && _exec.get().getPoolSize() < _exec.get().getMaximumPoolSize();
                      * @return true: 创建新线程
                      */
                     boolean threshold() {
+                        int size = super.size();
+                        // 这个 size > 1: 有时 添加任务后 size==1, 但还没被poll, 但线程还有空闲,就是取size的值有时稍快于线程poll任务
+                        if (size <= 1) return false;
                         int ps = _exec.get().getPoolSize();
-                        return ps < _exec.get().getMaximumPoolSize() && _exec.get().getActiveCount() >= ps;
+                        // 不超过最大线程数
+                        if (ps >= _exec.get().getMaximumPoolSize()) return false;
+                        // 所有线程都在忙并且有超过一定比例的当前忙的线程的任务在等待, 非关闭状态
+                        return size >= (int) (ps * upThreadThreshold) && (!shutdownHook.isAlive());
                     }
                     @Override
                     public boolean offer(Runnable r) { return !threshold() && super.offer(r); }
@@ -484,8 +492,9 @@ public class AppContext {
             }
             @Override
             public void execute(Runnable cmd) { _exec.get().execute(cmd); }
-            public int getCorePoolSize() { return _exec.get().getCorePoolSize() + (_exec.done() ? _exec.get().getCorePoolSize() : 0); }
-            public int getWaitingCount() { return _exec.get().getQueue().size() + (_exec.done() ? _exec.get().getQueue().size() : 0); }
+            public int getCorePoolSize() { return _exec.done() ? _exec.get().getCorePoolSize() : 0; }
+            public int getMaximumPoolSize() { return _exec.done() ? _exec.get().getMaximumPoolSize() : 0; }
+            public int getWaitingCount() { return _exec.done() ? _exec.get().getQueue().size() : 0; }
 
             @Override
             public String toString() { return _exec.done() ? _exec.get().toString() : "uninitialized"; }
