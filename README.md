@@ -5,88 +5,105 @@
 基本上都是程序员主动创建线程或线程池，这些线程是否被充分利用了，在应用不同的地方创建是否有必要，
 太多的线程是否造成竞争性能损耗。毕竟线程再多，而决定并发的是cpu的个数。
 
-所以需要框架来实现一个智能执行器(线程池)：根据应用的忙碌程度自动创建和销毁线程。
-线程池会自己根据排对的任务数和当前池中的线程数的比例判断是否需要新创建线程(和默认线程池的行为不同)；
-会catch所有异常， 不会被业务异常给弄死。
-程序只通过配置最大最小资源自动适配, 类似现在的数据库连接池。这样既能充分利用线程资源，
+所以需要框架来实现一个智能执行器(线程池)：根据应用的忙碌程度自动创建和销毁线程,
+即线程池会自己根据排对的任务数和当前池中的线程数的比例判断是否需要新创建线程(和默认线程池的行为不同)。
+会catch所有异常， 不会被业务异常给弄死(永动机)。  
+程序只需通过配置最大最小资源自动适配, 类似现在的数据库连接池。这样既能充分利用线程资源，
 也不会造成线程的空转，减小线程过多调度的性能浪费。
 
 > 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=8, sys.exec.maximumPoolSize=16 和 jvm内存参数 -Xmx1024m 控制
 
-框架设计一种轻量级执行对列(伪协程): __Devourer__ 来控制执行模式  
+框架设计一种轻量级执行器(伪协程): __Devourer__ 来控制执行模式(并发,暂停/恢复,速度等)  
 上层服务应该只关注怎么组装执行任务，然后提交给 __Devourer__ 或直接给执行线程池。如下图：
 
 <!--
-@startuml
 skinparam ConditionEndStyle hline
+
+:服务层ServerTpl;
+
 split
-   -[hidden]->
-   :服务 1;
+    -> 1. 使用对列执行器(Devourer);
+    :queue(执行器名);
+
+    partition "对列执行器(Devourer)" {
+        split
+            -> 控制并发;
+            :.parallel(n);
+            -> n-by-n提交;
+        split again
+            -> 速度控制;
+            :.speed("20/s");
+            -> 均匀分布在每秒提交\n最多20个任务;
+        split again
+            -> 暂停;
+            :.suspend(时间/条件);
+            -> 恢复;
+            :.resume();
+        split again
+            -> 队列最后任务有效;
+            :.useLast(true);
+            -> 自动清除队列前面的任务\n只提交对列中最后的任务;
+        end split
+
+    :.offer(任务);
+    }
+
+' split again
+'     partition "XTask:任务集/任务编排库" {
+'         :TaskWrapper;
+'         note
+'             任务
+'         end note
+'         split
+'             -> 执行步骤;
+'             :.step(执行函数);
+'         split again
+'             -> 重复执行步骤;
+'             :.reStep(最多重复次数, 执行函数, 判断是否重复函数);
+'         split again
+'             -> 并发执行;
+'             :.parallel(执行函数1,执行函数2,...);
+'         end split
+'         -> 添加进;
+'         :TaskContext;
+'         note
+'             任务编排容器/任务执行引擎
+'         end note
+'         :.start();
+'     }
+
 split again
-   -[hidden]->
-   :服务 2;
-split again
-   -[hidden]->
-   :服务 n;
+    -> 2. 直接提交异步任务;
+    :async(任务);
+
 end split
 
-if (任务(Runnable)) then (对列执行器)
-  fork
-    -> queue("1");
-    :Devourer 1;
-    :one-by-one;
-    -> 提交 ;
-  fork again
-    -> queue("2");
-    :Devourer 2;
-    :two-by-two;
-    -> 提交 ;
-  fork again
-    -> queue("n");
-    :Devourer n;
-    :n-by-n;
-    -> 提交 ;
-  end fork
-else
-  fork
-    -> async;
-    :任务 1;
-  fork again
-    -> async;
-    :任务 2;
-  fork again
-    -> async;
-    :任务 n;
-  end fork
-endif
 
-partition "执行器/线程池" {
-  if (任务(Runnable)) then (有空闲线程)
+partition "系统执行器/线程池" {
+    
+    if (任务(Runnable)) then (闲)
+    :加入等待队列;
     fork
-      -> 提交;
-      :线程 1;
-      -> 执行 ;
+        -> poll 任务;
+        :线程 1;
     fork again
-      -> 提交;
-      :线程 2;
-      -> 执行 ;
+        -> poll 任务;
+        :线程 2;
     fork again
-      -> 提交;
-      :线程 n;
-      -> 执行 ;
+        -> poll 任务;
+        :线程 n;
     end fork
-  else
-    if (线程池) then(小于线程池最大)
-      :创建新线程;
-      :执行;
-    else(加入)
-      :等待队列;
+    else
+        -[#red]-> 忙: **当前等待任务数和当前线程数的比例超过一半(默认)**;
+        :创建新线程;
     endif
-  endif
+    :执行;
 }
+
 @enduml
+
 -->
-![Image text](https://www.plantuml.com/plantuml/png/fPFFgjD05CRtynI7h995a6JPmEM2-WAw51UvPcg7cvvSaubIH71puVRwfwwiOi4MAgqBiRep1NsPJcBVmgHd6cXhIyNLTBv-ypjplZCvJQGVoxGTikHSu8KV-ssu6M4Wf8ZmDWPtPIVaq0e5SfPSX48o0B3ljKGGSBnldrJRHZvufQv7u7Xa0V-XB_20qJtMY1xZ600LPg89vc8-B_ymxwI8_bd8BGjaYoEOwkiFTTNFkvFVevVg_TGgASqeFcTGmK_WKSfJRXgEONahgN6BFuxIcCVWQ252Rfzrx7BnreVotfj5DWPFi-YsMqHtb-XgGJw9AcAv_1CHTuce1Qnu-3SQnu3wvM72jthtamu-q0IA3vpT6-nnkaSxSVCU68WcO-M3agkd14Ozcnj5zgkOliY_3GruoW0EZJKVT8lFsRB_dSvKOwsRsqZ1qqA3ZDIXTb1b86MhbmC8z_yHk0zHvmIW9qOvrD5G0AQQzHRPwrhD1y_LU6AjgwYh3sgUvMzdPAYhKwbgItXJNG_LvQVwNF6bgtvUBjzzB3yPSj6urkipTbh-IDlX7m00)
+![Image text](https://www.plantuml.com/plantuml/png/dLHVRnf747-_Jx5o7t9dsJZc4QIgKjktFjMHMgdfmwKipSddvNf_ebfL9SUj0pW6ktRy7yiXmZ529IHjH37OuSlSx77VeWjpXkDGBPfxGEpipFn-C_ERjPOrPgYcka8-px2KPciPzYLBBTchEYMFTOrHIP8Il5I0pJAyMr-YvXDgFZ3qf2HPXgxP4X7V_ATaCKRScwxteWgDAyWTylnbhxm5nrNv2_eauvZKL983ryHF3dMeFBo7dOAu6Lm95lO0dypyPv8Pyej4Wc-8Zn_ouCLBo3NXgWdRVoJ7BXEnVfcwJdMPASbe79j_j3hF-FQEswuano68-gEgiMY0ltOExTS85mMo34fJyapy_e8rCma5PrdOMeFSCsZz1gKgRsnxbxk8_93nqXfKJkBttLRDxNH4qwSYmq_MuMbfWeOZYB2Kp0-R_k7x1NvMTZlDIJxywIke5AB19hMS5IehqpNZwBm_By5zfuYqUIdFztFHf8v5lr8jMxPDXquIwMLhi5dbhGt_k88P8L_mprvv9xzZqeSCjclOALI8sweZwD1bb5HK7aX4Gl1CEarD6Tq2y5ybwLwuBd6AAF7R1wgrdC0W__JP0lxphWzuSHVQUqAF68C5zfs_CLN3e6OoP6SPc-9n-64UD0xfHloGFPv3RSAruFKBlrP1bB6XszIuNQ_i3Tz_guHy8hL6fvWj227SdTwaItq0b6aGy6TPmCoH4AWuGQx23-hyg04xhz7l_zB19SQieQ3eCeTX5-V2f_XSB1P3l0bDt1lhw3zY62zxtTDaT9ZYJRJfp_PKmmn4yUOAZgk1JW8sr_jyhtZNh75mGdKoqaLfXhiJC8t7Y7VwdXSlWYsuNXU32Yi_eLghx8UHogNG6aWXNNj_TxpE-V25NV3QNQ_wdBzxUVl23dwqD0bIoLyxZAcFTAeen7vC6P7zmxyKX1IzWuqBhvw73nkujyWbdJ6NfL2RZOoka-YQ9X2PB8vYiEIf8-CV7SdG95equafrYuuIVFU9ILFVzyNOFKwGsLcusODy0Kl5h49diBk5TamhBE8vueqNxeVdlUP6hvjrMsjGs9Jzpb7lJKMPdGqnWTmfTDhyu2t63WbfQUpjhVo573uJPcT5b_u5)
 
 # 安装教程
 ```xml
@@ -263,7 +280,7 @@ class Server3  {
 * 配置文件支持简单的 ${} 属性替换
 
 
-## 添加 [http](https://gitee.com/xnat/http) 服务
+## 添加 [xhttp](https://gitee.com/xnat/xhttp) 服务
 ```properties
 ### app.properties
 web.hp=:8080
