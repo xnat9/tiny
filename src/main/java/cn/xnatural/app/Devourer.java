@@ -70,9 +70,16 @@ public class Devourer {
         this.exec = exec == null ? new ThreadPoolExecutor(2, 4, 6L, TimeUnit.HOURS,
                 new LinkedBlockingQueue<Runnable>(100000) {
                     boolean threshold() { // 让线程池创建(除核心线程外)新的线程的临界条件
+                        int size = super.size();
+                        // 这个 size > 1: 有时 添加任务后 size==1, 但还没被poll, 但线程还有空闲,就是取size的值有时稍快于线程poll任务
+                        if (size <= 1) return false;
                         ThreadPoolExecutor e = ((ThreadPoolExecutor) Devourer.this.exec);
-                        int ps;
-                        return lock.limit > e.getCorePoolSize() && (ps = e.getPoolSize()) < e.getMaximumPoolSize() && e.getActiveCount() >= ps;
+                        if (lock.limit <= e.getCorePoolSize()) return false;
+                        int ps = e.getPoolSize();
+                        // 不超过最大线程数
+                        if (ps >= e.getMaximumPoolSize()) return false;
+                        // 所有线程都在忙并且有超过一定比例的当前忙的线程的任务在等待, 非关闭状态
+                        return size >= (int) (ps * 0.5);
                     }
                     @Override
                     public boolean offer(Runnable r) { return !threshold() && super.offer(r); }
@@ -111,9 +118,10 @@ public class Devourer {
      * 不断的从 {@link #waiting} 对列中取出执行
      */
     protected void trigger() {
-        if (pauseCondition != null) { // 是否设置了暂停
-            if (pauseCondition.test(this)) return;
-            else pauseCondition = null;
+        Predicate<Devourer> condition = this.pauseCondition; // 重新弄个本地变量是为了防止多线程下边可能为空的情况
+        if (condition != null) { // 是否设置了暂停
+            if (condition.test(this)) return;
+            else this.pauseCondition = null;
         }
         if (waiting.isEmpty()) return;
         // 1.必须保证正在执行的函数不超过 parallelLimit
@@ -127,6 +135,7 @@ public class Devourer {
                 task = waiting.poll();
                 if (task != null) task.run(); // 5个并发添加5个任务, 锁限制3, 第一次执行完3个任务, 第2次再同时获取3个锁, 但任务只有2个, 所以有可能poll出来为空
             } catch (Throwable ex) {
+                // 不用担心顺序, 因为如果并发为1, 一定是顺序的; 如果并发大于1, 执行顺序就不一定顺序了
                 if (task != null && failMaxKeep != null && failMaxKeep > 0 && (getWaitingCount() < failMaxKeep)) waiting.addFirst(task);
                 if (errorHandler != null) {
                     try {
@@ -270,6 +279,12 @@ public class Devourer {
 
 
     /**
+     * 是否使用了 userLast 特性
+     */
+    public boolean isUseLast() { return useLast; }
+
+
+    /**
      * 是否是暂停状态
      * @return true: 暂停中
      */
@@ -284,7 +299,7 @@ public class Devourer {
     /**
      * 正在执行的任务数
      */
-    public int parallel() { return lock.getLatchSize(); }
+    public int getParallel() { return lock.getLatchSize(); }
 
 
     /**
@@ -298,6 +313,6 @@ public class Devourer {
 
     @Override
     public String toString() {
-        return key + "{parallel: " + parallel() + ", waitingCount: " + getWaitingCount() + ", isSuspended: "+ isSuspended() +"}";
+        return key + "{parallel: " + getParallel() + ", waitingCount: " + getWaitingCount() + ", suspended: "+ isSuspended() + ", useLast: " + isUseLast() +"}";
     }
 }

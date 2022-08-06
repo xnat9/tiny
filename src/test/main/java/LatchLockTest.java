@@ -29,23 +29,16 @@ public class LatchLockTest {
                 lock.tryLock();
             }
         });
-        exec.execute(() -> {
+        Runnable releaseFn = () -> {
             while (!stop.get()) {
                 int i = lock.release();
                 if (i < 0) {
                     System.out.println("error: after release lock < 0");
                 }
             }
-        });
-        exec.execute(() -> {
-            while (!stop.get()) {
-                int i = lock.release();
-                if (i < 0) {
-                    System.out.println("error: after release lock < 0");
-                }
-            }
-        });
-
+        };
+        exec.execute(releaseFn);
+        exec.execute(releaseFn);
 
         Thread.sleep(1000 * 60 * 2);
         stop.set(true);

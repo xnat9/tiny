@@ -852,6 +852,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 - [x] fix: 应用关闭没有等待各服务正常关闭
 - [x] fix: 系统线程池没有拦截到所有异常
 - [x] opt: 系统线程池智能增长
+- [x] fix: Devourer#pauseCondition 多线程可能npe
+- [ ] feat: 增加日志级别配置
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: Httper 工具支持 websocket
 - [ ] feat: 自定义注解

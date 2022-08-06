@@ -21,7 +21,7 @@ public class DevourerTest {
         AtomicBoolean stop = new AtomicBoolean(false);
         while (System.currentTimeMillis() - start < 1000 * 15 && !stop.get()) {
             devourer.offer(() -> {
-                int p = devourer.parallel();
+                int p = devourer.getParallel();
                 if (p > 3) {
                     log.info("========================" + p);
                     stop.set(true);
