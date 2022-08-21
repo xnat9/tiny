@@ -9,7 +9,7 @@
 即线程池会自己根据排对的任务数和当前池中的线程数的比例判断是否需要新创建线程(和默认线程池的行为不同)。
 会catch所有异常， 不会被业务异常给弄死(永动机)。  
 程序只需通过配置最大最小资源自动适配, 类似现在的数据库连接池。这样既能充分利用线程资源，
-也不会造成线程的空转，减小线程过多调度的性能浪费。
+也减少线程的空转和线程过多调度的性能浪费。
 
 > 所以系统性能只由线程池大小属性 sys.exec.corePoolSize=8, sys.exec.maximumPoolSize=16 和 jvm内存参数 -Xmx1024m 控制
 
@@ -306,7 +306,7 @@ app.addSource(new ServerTpl("web") { //添加web服务
 });
 ```
 
-## 添加 [jpa](https://gitee.com/xnat/jpa) 数据库操作服务
+## 添加 [xjpa](https://gitee.com/xnat/xjpa) 数据库操作服务
 ```properties
 ### app.properties
 jpa_local.url=jdbc:mysql://localhost:3306/test?useSSL=false&user=root&password=root&allowPublicKeyRetrieval=true
@@ -412,7 +412,7 @@ app.addSource(new ServerTpl() {
 app.addSource(new ServerTpl() {
     @EL(name = "sys.started", async = true)
     void start() {
-        String str = bean(Repo).firstRow("select count(1) as total from test").get("total").toString()；
+        String str = bean(Repo.class).firstRow("select count(1) as total from test").get("total").toString()；
         log.info("=========" + str);
     }
 });
@@ -524,6 +524,15 @@ for (int i = 0; i < 20; i++) {
     // 入队快, 任务执行慢， 中间的可以不用执行
     q.offer(() -> repo.execute("update test set count=?", i));
 }
+```
+
+```java
+// 例: 从服务端获取最新的数据
+Devourer q = queue("newer").useLast(true);
+// 用户不停的点击刷新
+q.offer(() -> {
+    Utils.http().get("http://localhost:8080/data/newer").execute();    
+})
 ```
 
 #### 原理: 并发流量控制锁 LatchLock
@@ -694,7 +703,7 @@ Utils.copier(
 ).addConverter("time", o -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date((long) o)))
         .build();
 ```
-#### 属性值转换
+#### 忽略空属性
 ```java
 Utils.copier(
       new Object() {
@@ -726,6 +735,14 @@ Utils.copier(
 ## 文件内容监控器(类linux tail)
 ```java
 Utils.tailer().tail("d:/tmp/tmp.json", 5);
+```
+
+## ioCopy(输入流, 输出流, 速度)
+```java
+// 文件copy
+try (InputStream is = new FileInputStream("d:/tmp/陆景.png"); OutputStream os = new FileOutputStream("d:/tmp/青子.png")) {
+    Utils.ioCopy(is, os);
+}
 ```
 
 ## 简单缓存 CacheSrv
@@ -847,13 +864,11 @@ final Lazier<String> _id = new Lazier<>(() -> {
 , [GRule(groovy)](https://gitee.com/xnat/grule)
 
 
-# 1.1.8 ing
-- [x] fix: cacheSrv#hgetAndUpdate npe
-- [x] fix: 应用关闭没有等待各服务正常关闭
-- [x] fix: 系统线程池没有拦截到所有异常
-- [x] opt: 系统线程池智能增长
-- [x] fix: Devourer#pauseCondition 多线程可能npe
+# 1.1.9 ing
+- [ ] refactor: 心跳新配置 60~180
+- [ ] feat: 空闲任务
 - [ ] feat: 增加日志级别配置
+- [ ] fix: Copier is开头的属性被忽略了
 - [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: Httper 工具支持 websocket
 - [ ] feat: 自定义注解
