@@ -122,6 +122,7 @@ public class Utils {
      * @param length 生成的长度
      */
     public static String nanoId(int length) {
+        if (length < 1) throw new IllegalArgumentException("Param length must >= 1");
         final int mask = (2 << (int)Math.floor(Math.log(CS.length - 1) / Math.log(2))) - 1;
         final int step = (int)Math.ceil(1.6 * mask * length / CS.length);
         final StringBuilder sb = new StringBuilder();

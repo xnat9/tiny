@@ -51,6 +51,7 @@ public class UtilsTest {
     @Test
     void nanoIdTest() {
         log.info("nanoId: " + Utils.nanoId());
+        log.info("nanoId: " + Utils.nanoId(1));
     }
 
 

@@ -737,6 +737,11 @@ Utils.copier(
 Utils.tailer().tail("d:/tmp/tmp.json", 5);
 ```
 
+## nanoId(长度): nano算法生成动态唯一字符
+```java
+String id = Utils.nanoId();
+```
+
 ## ioCopy(输入流, 输出流, 速度)
 ```java
 // 文件copy
@@ -865,6 +870,8 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 
 # 1.1.9 ing
+- [x] fix: Utils#nanoId(0) 卡死的问题
+- [ ] upgrade: enet:1.1.1
 - [ ] refactor: 心跳新配置 60~180
 - [ ] feat: 空闲任务
 - [ ] feat: 增加日志级别配置
