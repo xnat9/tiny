@@ -871,12 +871,12 @@ final Lazier<String> _id = new Lazier<>(() -> {
 
 # 1.1.9 ing
 - [x] fix: Utils#nanoId(0) 卡死的问题
+- [x] feat: Httper 工具支持 get 传body
 - [ ] upgrade: enet:1.1.1
 - [ ] refactor: 心跳新配置 60~180
 - [ ] feat: 空闲任务
 - [ ] feat: 增加日志级别配置
 - [ ] fix: Copier is开头的属性被忽略了
-- [ ] feat: Httper 工具支持 get 传body
 - [ ] feat: Httper 工具支持 websocket
 - [ ] feat: 自定义注解
 

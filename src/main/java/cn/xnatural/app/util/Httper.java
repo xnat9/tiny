@@ -148,7 +148,6 @@ public class Httper {
 
             String boundary = null;
             if ("POST".equals(method)) {
-                conn.setUseCaches(false);
                 conn.setDoOutput(true);
                 if ("multipart/form-data".equalsIgnoreCase(contentType)) {
                     isMulti = true;
@@ -173,83 +172,88 @@ public class Httper {
             conn.connect();  // 连接
 
             if ("POST".equals(method)) {
-                DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-                if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && bodyStr != null) {
-                    os.write(bodyStr.getBytes(charset));
-                    os.flush(); os.close();
-                } else if (isMulti) {
-                    String end = "\r\n";
-                    String twoHyphens = "--";
-                    if (params != null) {
-                        for (Map.Entry<String, Object> entry : params.entrySet()) {
-                            os.writeBytes(twoHyphens + boundary + end);
-                            if (entry.getValue() instanceof File) {
-                                String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +((File) entry.getValue()).getName()+ "\"" + end;
+                try (DataOutputStream os = new DataOutputStream(conn.getOutputStream())) {
+                    if (("application/json".equals(contentType) || "text/plain".equals(contentType)) && bodyStr != null) {
+                        os.write(bodyStr.getBytes(charset));
+                    } else if (isMulti) {
+                        String end = "\r\n";
+                        String twoHyphens = "--";
+                        if (params != null) {
+                            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                                os.writeBytes(twoHyphens + boundary + end);
+                                if (entry.getValue() instanceof File) {
+                                    String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +((File) entry.getValue()).getName()+ "\"" + end;
+                                    os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
+                                    os.writeBytes(end);
+                                    try (FileInputStream is = new FileInputStream((File) entry.getValue())) { // copy
+                                        byte[] bs = new byte[Math.min(is.available(), 4028)];
+                                        int n;
+                                        while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
+                                    }
+                                } else {
+                                    os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes(charset));
+                                    os.writeBytes(end);
+                                    os.write(entry.getValue() == null ? "".getBytes(charset) : entry.getValue().toString().getBytes(charset));
+                                }
+                                os.writeBytes(end);
+                            }
+                        }
+                        if (fileStreams != null) {
+                            for (Map.Entry<String, Map<String, Object>> entry : fileStreams.entrySet()) {
+                                os.writeBytes(twoHyphens + boundary + end);
+                                Map<String, Object> fileInfo = entry.getValue();
+                                String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +fileInfo.get("filename")+ "\"" + end;
                                 os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
                                 os.writeBytes(end);
-                                try (FileInputStream is = new FileInputStream((File) entry.getValue())) { // copy
+                                try (InputStream is = (InputStream) fileInfo.get("fileStream")) { // copy
                                     byte[] bs = new byte[Math.min(is.available(), 4028)];
                                     int n;
                                     while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
                                 }
-                            } else {
-                                os.write(("Content-Disposition: form-data; name=\"" +entry.getKey()+"\"" + end).getBytes(charset));
                                 os.writeBytes(end);
-                                os.write(entry.getValue() == null ? "".getBytes(charset) : entry.getValue().toString().getBytes(charset));
                             }
-                            os.writeBytes(end);
                         }
-                    }
-                    if (fileStreams != null) {
-                        for (Map.Entry<String, Map<String, Object>> entry : fileStreams.entrySet()) {
-                            os.writeBytes(twoHyphens + boundary + end);
-                            Map<String, Object> fileInfo = entry.getValue();
-                            String s = "Content-Disposition: form-data; name=\"" +entry.getKey()+"\"; filename=\"" +fileInfo.get("filename")+ "\"" + end;
-                            os.write(s.getBytes(charset)); // 这样写是为了避免中文文件名乱码
-                            os.writeBytes(end);
-                            try (InputStream is = (InputStream) fileInfo.get("fileStream")) { // copy
-                                byte[] bs = new byte[Math.min(is.available(), 4028)];
-                                int n;
-                                while (-1 != (n = is.read(bs))) {os.write(bs, 0, n);}
-                            }
-                            os.writeBytes(end);
-                        }
-                    }
 
-                    os.writeBytes(twoHyphens + boundary + twoHyphens + end);
-                    os.flush(); os.close();
-                } else if ((params != null && !params.isEmpty())) {
-                    StringBuilder sb = new StringBuilder();
-                    for (Map.Entry<String, Object> entry : params.entrySet()) {
-                        if (entry.getValue() != null) {
-                            sb.append(entry.getKey() + "=" + URLEncoder.encode(entry.getValue().toString(), charset.toString()) + "&");
+                        os.writeBytes(twoHyphens + boundary + twoHyphens + end);
+                    } else if ((params != null && !params.isEmpty())) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Map.Entry<String, Object> entry : params.entrySet()) {
+                            if (entry.getValue() != null) {
+                                sb.append(entry.getKey() + "=" + URLEncoder.encode(entry.getValue().toString(), charset.toString()) + "&");
+                            }
                         }
+                        os.write(sb.toString().getBytes(charset));
                     }
-                    os.write(sb.toString().getBytes(charset));
-                    os.flush(); os.close();
+                }
+            }
+            // 支持 get 传body
+            else if ("GET".equals(method) && bodyStr != null && !bodyStr.isEmpty()) {
+                try (DataOutputStream os = new DataOutputStream(conn.getOutputStream())) {
+                    os.write(bodyStr.getBytes(charset));
                 }
             }
             // http 状态码
             respCode = conn.getResponseCode();
             // 保存cookie
             if (conn.getHeaderFields() != null) {
-                List<String> cs = conn.getHeaderFields().get("Set-Cookie");
-                if (cs == null) cs = conn.getHeaderFields().get("set-cookie");
-                if (cs != null) {
-                    for (String c : cs) {
-                        String[] arr = c.split(";")[0].split("=");
-                        cookie(arr[0], arr[1]);
-                    }
-                }
+                conn.getHeaderFields().entrySet().stream().filter(e -> "Set-Cookie".equalsIgnoreCase(e.getKey()))
+                        .map(Map.Entry::getValue)
+                        .findFirst()
+                        .ifPresent(cs -> {
+                            for (String c : cs) {
+                                String[] arr = c.split(";")[0].split("=");
+                                cookie(arr[0], arr[1]);
+                            }
+                        });
             }
 
             // 取结果
             StringBuilder sb = new StringBuilder();
             try (Reader reader = new InputStreamReader(conn.getInputStream(), charset)) {
                 char[] buf = new char[1024];
-                int length = 0;
-                while((length = reader.read(buf)) != -1) {
-                    sb.append(buf, 0, length);
+                int len = 0;
+                while((len = reader.read(buf)) != -1) {
+                    sb.append(buf, 0, len);
                 }
             }
             ret = sb.toString();
@@ -260,7 +264,7 @@ public class Httper {
             if (conn != null) conn.disconnect();
         }
         if (debug) {
-            String logMsg = "Send http: ("+method+")" +urlStr+ ", params: " +(params == null ? bodyStr : params)+ ", result: " + ret;
+            String logMsg = "Send http: ("+method+")" +urlStr+ ", params: " +params+ ", bodyStr: "+ bodyStr + ", result: " + ret;
             if (ex == null) {
                 log.info(logMsg);
             } else {
