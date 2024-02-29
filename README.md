@@ -6,7 +6,7 @@
 太多的线程是否造成竞争性能损耗。毕竟线程再多，而决定并发的是cpu的个数。
 
 所以需要框架来实现一个智能执行器(线程池)：根据应用的忙碌程度自动创建和销毁线程,
-即线程池会自己根据排对的任务数和当前池中的线程数的比例判断是否需要新创建线程(和默认线程池的行为不同)。
+即线程池会自己根据排队的任务数和当前池中的线程数的比例判断是否需要新创建线程(和默认线程池的行为不同)。
 会catch所有异常， 不会被业务异常给弄死(永动机)。  
 程序只需通过配置最大最小资源自动适配, 类似现在的数据库连接池。这样既能充分利用线程资源，
 也减少线程的空转和线程过多调度的性能浪费。
@@ -22,10 +22,10 @@ skinparam ConditionEndStyle hline
 :服务层ServerTpl;
 
 split
-    -> 1. 使用对列执行器(Devourer);
+    -> 1. 使用队列执行器(Devourer);
     :queue(执行器名);
 
-    partition "对列执行器(Devourer)" {
+    partition "队列执行器(Devourer)" {
         split
             -> 控制并发;
             :.parallel(n);
@@ -42,7 +42,7 @@ split
         split again
             -> 队列最后任务有效;
             :.useLast(true);
-            -> 自动清除队列前面的任务\n只提交对列中最后的任务;
+            -> 自动清除队列前面的任务\n只提交队列中最后的任务;
         end split
 
     :.offer(任务);
@@ -157,7 +157,7 @@ end note
 
 note left of AppContext::queues
   所有被Server#queue 方添加的
-  对列执行器
+  队列执行器
 end note
 
 note right of AppContext::addSource
@@ -206,7 +206,7 @@ class Server1 {
 
   {method} bean(Class bean类型, String bean名)
 
-  {method} queue(String 对列名, Runnabel 任务)
+  {method} queue(String 队列名, Runnabel 任务)
 
   {method} async(Runnable 异步任务)
 
@@ -226,7 +226,7 @@ class Server2  {
 
   {method} bean(Class bean类型, String bean名)
 
-  {method} queue(String 对列名, Runnabel 任务)
+  {method} queue(String 队列名, Runnabel 任务)
 
   {method} async(Runnable 异步任务)
 
@@ -246,7 +246,7 @@ class Server3  {
 
   {method} bean(Class bean类型, String bean名)
 
-  {method} queue(String 对列名, Runnabel 任务)
+  {method} queue(String 队列名, Runnabel 任务)
 
   {method} async(Runnable 异步任务)
 
@@ -455,14 +455,14 @@ async(() -> {
     // 异步执行任务
 })
 ```
-#### 创建任务对列
+#### 创建任务队列
 ```java
 queue("队列名", () -> {
     // 执行任务
 })
 ```
 
-## _对列执行器_: Devourer
+## _队列执行器_: Devourer
 会自旋执行完队列中所有任务  
 当需要控制任务最多 一个一个, 两个两个... 的执行时   
 服务基础类(ServerTpl)提供方法创建: queue
@@ -484,7 +484,7 @@ queue("save").offer(() -> {
 ```java
 queue("save").parallel(2)
 ```
-> 注: parallel 最好小于 系统最大线程数(sys.exec.maximumPoolSize), 即不能让某一个执行对列占用所有可用的线程
+> 注: parallel 最好小于 系统最大线程数(sys.exec.maximumPoolSize), 即不能让某一个执行队列占用所有可用的线程
 
 #### 执行速度控制
 把任务按速度均匀分配在时间线上执行  
@@ -501,10 +501,10 @@ queue("save").speed(null)
 #### 队列 暂停/恢复
 ```java
 // 暂停执行, 一般用于发生错误时
-// 注: 必须有新的任务入对, 重新触发继续执行. 或者resume方法手动恢复执行
+// 注: 必须有新的任务入队, 重新触发继续执行. 或者resume方法手动恢复执行
 queue("save")
     .errorHandle {ex, me ->
-        // 发生错误时, 让对列暂停执行(不影响新任务入对)
+        // 发生错误时, 让队列暂停执行(不影响新任务入队)
         // 1. 暂停一段时间
         me.suspend(Duration.ofSeconds(180));
         // 2. 条件暂停(每个新任务入队都会重新验证条件)
